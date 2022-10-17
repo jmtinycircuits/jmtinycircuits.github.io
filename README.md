@@ -1,5 +1,11 @@
 # TinyCircuits-Web-Programming-Platform
 
+## How to build and develop
+
+1. If you just cloned this repo, execute `npm i` in the cloned root folder to install dependencies for building the static site (only static, no server interaction).
+2. Execute `npm run watch` in root to run server at `https://127.0.0.1/`. Each time a file that is marked as tracked in `tailwind.config.js` is saved, the website will automatically update but you'll need to refresh it. The tracked files are for Tailwind CSS and daisyUI. If a JS/CSS/HTML file uses Tailwind CSS or daisyUI classes, make sure they are tracked in `tailwind.config.js` otherwise you'll get bugs where elements do not have the correct formatting or disappear because the position formatting was lost.
+3. Should be able to run `npm run build` to build the site without watching, see `package.json` for commands/scripts
+
 # Setup from scratch (for reference if needed)
 1. `mkdir TinyCircuits-Web-Programming-Platform`
 2. `cd TinyCircuits-Web-Programming-Platform`
