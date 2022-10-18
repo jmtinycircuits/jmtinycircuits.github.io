@@ -53,6 +53,7 @@ let decoder = new TextDecoder();
 let btnConnectTV = document.getElementById("btnConnectTV");
 let videoCapture = document.getElementById("videoCapture");
 
+let spanJPEGQuality = document.getElementById("spanJPEGQuality");
 
 let offscreenCanvasOutput = new OffscreenCanvas(216, 135);
 let offscreenCtx = offscreenCanvasOutput.getContext("2d");
@@ -61,6 +62,14 @@ let canvasOutput = document.getElementById("canvasOutput");
 let ctx = canvasOutput.getContext("2d");
 
 let detectedTV = false;
+
+
+const targetFrameLength = 8000;
+const targetFrameLengthMargin = 500;
+const targetFrameLengthMin = targetFrameLength-targetFrameLengthMargin;
+const targetFrameLengthMax = targetFrameLength+targetFrameLengthMargin;
+let jpegQuality = 0.6;
+let jpegQualityStep = 0.05;
 
 
 // Check if WebSerial is supported in this browser
@@ -98,20 +107,37 @@ if (!("serial" in navigator)){
             // Draw frame to canvas and scale
             offscreenCtx.drawImage(videoCapture, 0, 0, canvasOutput.width, canvasOutput.height);
 
-            offscreenCanvasOutput.convertToBlob({type: "image/jpeg", quality: 0.6}).then((blob) => {
-                // Handle sending frames
-                if(serial.connected){
-                    blob.arrayBuffer().then((buffer) => {
-                        serial.write(new Uint8Array(buffer), false);
-                        serial.write("FRAME", true);
-                    });
-                }
+            let frameLength = 0;
 
-                // Handle drawing scaled and jpeg compressed frames in preview
-                createImageBitmap(blob, 0, 0, canvasOutput.width, canvasOutput.height).then((bitmap) => {
-                    ctx.drawImage(bitmap, 0, 0, canvasOutput.width, canvasOutput.height);
+            let recursiveAdjust = () => {
+                offscreenCanvasOutput.convertToBlob({type: "image/jpeg", quality: jpegQuality}).then((blob) => {
+                    frameLength = blob.size;
+
+                    if(frameLength < targetFrameLengthMin && jpegQuality + jpegQualityStep <= 1.0){
+                        jpegQuality += jpegQualityStep;
+                        recursiveAdjust();
+                    }else if(frameLength > targetFrameLengthMax && jpegQuality - jpegQualityStep >= 0.0){
+                        jpegQuality -= jpegQualityStep;
+                        recursiveAdjust();
+                    }else{
+                        spanJPEGQuality.innerText = "JPEG Quality: " + (100.0 * jpegQuality).toFixed(0) + "%";
+
+                        // Handle sending frames
+                        if(serial.connected){
+                            blob.arrayBuffer().then((buffer) => {
+                                serial.write(new Uint8Array(buffer), false);
+                                serial.write("FRAME", true);
+                            });
+                        }
+        
+                        // Handle drawing scaled and jpeg compressed frames in preview
+                        createImageBitmap(blob, 0, 0, canvasOutput.width, canvasOutput.height).then((bitmap) => {
+                            ctx.drawImage(bitmap, 0, 0, canvasOutput.width, canvasOutput.height);
+                        });
+                    }
                 });
-            });
+            }
+            recursiveAdjust();
         }
 
         videoCapture.requestVideoFrameCallback(processFrame);
