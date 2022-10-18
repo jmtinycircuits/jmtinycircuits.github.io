@@ -75,7 +75,7 @@ if (!("serial" in navigator)){
         timeout = setTimeout(() => {
             serial.write("TYPE", true);
             askType();
-        }, 350);
+        }, 100);
     }
 
     let collectedData = "";
