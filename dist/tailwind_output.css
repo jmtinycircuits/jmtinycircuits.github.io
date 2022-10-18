@@ -2388,6 +2388,14 @@ html {
   bottom: 1rem;
 }
 
+.bottom-2 {
+  bottom: 0.5rem;
+}
+
+.right-4 {
+  right: 1rem;
+}
+
 .m-4 {
   margin: 1rem;
 }
@@ -2401,8 +2409,8 @@ html {
   margin-right: 1.5rem;
 }
 
-.mr-3 {
-  margin-right: 0.75rem;
+.mr-1 {
+  margin-right: 0.25rem;
 }
 
 .mt-4 {
@@ -2411,10 +2419,6 @@ html {
 
 .mb-2 {
   margin-bottom: 0.5rem;
-}
-
-.mr-1 {
-  margin-right: 0.25rem;
 }
 
 .mt-1 {
