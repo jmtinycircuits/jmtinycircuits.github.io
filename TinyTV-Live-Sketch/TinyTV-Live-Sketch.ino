@@ -1,5 +1,6 @@
-#include <TFT_eSPI.h>       // Include the graphics library
+#include <TFT_eSPI.h>
 #include <JPEGDEC.h>
+#include "Adafruit_USBD_CDC.h"
 
 
 // Screen and drawing area parameters
@@ -95,6 +96,8 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
         // Return true since the next deliminator for the next frame was found (and should go in the other jpeg buffer)
         return true;
       }
+    }else if(frameDelim[0] == 'T' && frameDelim[1] == 'Y' && frameDelim[2] == 'P' && frameDelim[3] == 'E'){
+      Serial.print("TV2");
     }
   }
 

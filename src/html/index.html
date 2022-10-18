@@ -1,14 +1,71 @@
 <!doctype html>
 
-<html theme="dark">
+<html data-theme="night">
     <head>
-        <title>Template website</title>
+        <title>TinyTV Live</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="/dist/tailwind_output.css" rel="stylesheet">
     </head>
 
     <body>
-        Hello World with Tailwind CSS and daisyUI!
+        <!-- Main container -->
+        <div class="absolute top-0 left-0 bottom-0 right-0 flex flex-col justify-center items-center">
+            <!-- Connect/disconnect button -->
+            <button id="btnConnectTV" class="btn btn-lg btn-primary m-4">Connect TV</button>
+
+            <div id="divDetectingTVType" class="whitespace-nowrap flex flex-row flex-nowrap absolute invisible transition-all duration-300 opacity-0">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="animate-spin h-6 w-6 mr-3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                Detecting TV type...
+            </div>
+
+            <!-- <div id="divDetectedTVType" class="select-none mt-4 text-success whitespace-nowrap flex flex-row flex-nowrap absolute invisible">
+                Detected TV: 
+            </div> -->
+
+            <!-- Streaming interface -->
+            <div id="divStreamingInterface" class="opacity-0 transition-all duration-300 w-full mt-4 h-fit rounded-2xl flex flex-col justify-center items-center absolute invisible">
+                <div class="flex flex-row flex-nowrap items-center justify-center">
+                    <div class="w-4 h-4 mr-1">
+                        <div class="absolute w-4 h-4 mr-2 bg-red-600 rounded-full"></div>
+                        <div class="absolute w-4 h-4 mr-2 bg-red-600 rounded-full animate-ping"></div>
+                    </div>
+                    <span class="font-bold text-xl">Streaming...</span>
+                    <div class="ml-1 w-fit h-fit tooltip tooltip-info tiny:tooltip-left lg:tooltip-bottom" data-tip="This preview shows the scaled and JPEG compressed frames that are being sent to the connected TinyTV">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+                        </svg>
+                    </div> 
+                </div>
+
+                <video id="videoCapture" class="absolute invisible w-1/2 h-auto" autoplay></video>
+                <canvas id="canvasOutput" width=216 height=135 class="w-1/2 h-auto" style="image-rendering: pixelated;"></canvas>
+            </div>
+
+            <!-- Error alert -->
+            <div id="errorAlert" class="alert alert-error shadow-lg w-fit max-w-[600px] absolute invisible">
+                <div>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span>Error! This web browser is not supported! Please use Google Chrome, Microsoft Edge, or any other Chromium based browsers</span>
+                  <div class="w-fit h-fit tooltip tooltip-info tiny:tooltip-left lg:tooltip-bottom" data-tip="Although we would like to support more browsers, only Chromium based browsers support the WebSerial API">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+                    </svg>
+                  </div>                 
+                </div>
+            </div>
+        </div>
+
+        <!-- Detected TV success alert -->
+        <div id="detectedAlert" class="absolute invisible opacity-0 bottom-4 w-fit alert alert-success shadow-lg m-auto left-0 right-0 select-none transition-all duration-300">
+            <div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <span id="detectedAlertText">Detected ...!</span>
+            </div>
+        </div>
+
+        <script type="module" src="/dist/js/main.js"></script>
     </body>
 </html>
