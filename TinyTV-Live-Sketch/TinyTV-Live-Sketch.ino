@@ -57,10 +57,10 @@ enum JPEG_BUF_SEMAPHORE {
 
 // (read/write core 0 and 1)
 // Ensure logic will not allow cores to write to same at flag at same time. Likely OK
-// for one core to write and one to read at a time. For example, Iy jpegBuf0Semaphore
+// for one core to write and one to read at a time. For example, If jpegBuf0Semaphore
 // is set to LOCKED_BY_CORE_0, then core 1 should never try to write to that flag unless
 // it is set to LOCKED_BY_CORE_1 (which means core 0 should not try tot write to the flag,
-// only read it and maybe it miss it on one loop)
+// only read it and maybe it misses it on one loop but will get it the next)
 enum JPEG_BUF_SEMAPHORE jpegBuf0Semaphore = UNLOCKED;
 enum JPEG_BUF_SEMAPHORE jpegBuf1Semaphore = UNLOCKED;
 
@@ -70,22 +70,25 @@ void setup(){
   // Turn this one off since it doesn't provide nice API for buffered streaming
   Serial.end();
 
-  // Use this instead
-  cdc.begin(2000000);
+  // Use this instead (pass 0 since doesn't matter for USBSerial/Virtual)
+  cdc.begin(0);
 }
+
 
 // Returns true when done filling passed buffer with valid jpeg data (buffer index is used and reset externally)
 bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
   uint16_t available = cdc.available();
   if(available > 0){
 
-    if(frameDeliminatorAcquired){   // Found a deliminator and any subsequent data has been confirmed to be on track, store incoming data
+    // If deliminator just found, next two bytes should be for size of frame followed by the actual jpeg bytes
+    // If deliminator set as not found, search for it byte by byte and then set 'frameDeliminatorAcquired'
+    if(frameDeliminatorAcquired){
 
       // Figure out the frame size and check that it is in bounds
       if(frameSize == 0 && available >= 2){
         frameSize = (((uint16_t)cdc.read()) << 8) | ((uint16_t)cdc.read());
 
-        // If the frame size is larger then the buffer, something went wrong and should
+        // If the frame size is larger than the buffer, something went wrong and should
         // go back to looking for deliminator a byte at a time (get back on track)
         if(frameSize >= STREAM_BUFFER_SIZE){
           frameSize = 0;
@@ -93,9 +96,8 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
         }
       }
 
-      // If the frame size was determined, fill buffer with incoming data and then return true to signify filled
+      // If the frame size was determined, fill buffer with incoming data and eventually return true to signify filled
       if(frameSize != 0){
-        // Ensure starting index + the numbers of bytes to read is < buffer size, otherwise, search for deliminator
         uint16_t bytesToReadCount = frameSize-(jpegBufIndex+1);
 
         // Check if jpeg buffer is full, if so, go back to deliminator searching
@@ -111,7 +113,8 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
         jpegBufIndex += cdc.read(jpegBuf + jpegBufIndex, bytesToReadCount);
       }
 
-    }else{                          // No deliminator, need to ensure on track for collecting data in right order
+    }else{
+      // No deliminator, need to get back on track for collecting data in right order
       while(cdc.available()){
         // Move all bytes from right to left in deliminator buffer
         frameDelim[0] = frameDelim[1];
@@ -134,7 +137,7 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
   }
 
   // No buffer filled, return false for now and wait for 
-  // more serial data to finish the work to fill this buffer
+  // more serial data to finish filling this buffer
   return false;
 }
 
@@ -194,7 +197,7 @@ void setup1(){
 }
 
 
-// Updates the bytes in the screen buffer when decoding jpeg frame
+// Update the bytes in the screen buffer when decoding jpeg frame
 int draw(JPEGDRAW* block){
 
   // Check that the block is within bounds of screen, otherwise, don't draw it
@@ -240,7 +243,7 @@ void cropCorners(){
 void decodeAndUpdateScreen(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
   // Decode
   if (!jpeg.openRAM(jpegBuf, jpegBufIndex-5, draw)){
-    Serial.println("Could not open frame from RAM!");
+    cdc.println("Could not open frame from RAM!");
   }
   jpeg.decode(0, 0, 0);
 
