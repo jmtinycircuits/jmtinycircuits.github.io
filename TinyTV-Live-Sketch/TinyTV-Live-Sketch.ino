@@ -26,6 +26,10 @@ uint16_t jpegBuf0Index = 0;
 uint16_t jpegBuf1Index = 0;
 
 
+bool frameDeliminatorAcquired = false;
+uint16_t frameSize = 0;
+
+
 // ##### CORE 1 GLOBALS #####
 // (used by core 1)
 TFT_eSPI tft = TFT_eSPI();
@@ -61,10 +65,6 @@ enum JPEG_BUF_SEMAPHORE jpegBuf0Semaphore = UNLOCKED;
 enum JPEG_BUF_SEMAPHORE jpegBuf1Semaphore = UNLOCKED;
 
 
-bool frameDeliminatorAcquired = false;
-uint16_t frameSize = 0;
-
-
 // ***** CORE 0, incoming serial handler *****
 void setup(){
   // Turn this one off since it doesn't provide nice API for buffered streaming
@@ -78,6 +78,7 @@ void setup(){
 bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
   uint16_t available = cdc.available();
   if(available > 0){
+
     if(frameDeliminatorAcquired){   // Found a deliminator and any subsequent data has been confirmed to be on track, store incoming data
 
       // Figure out the frame size and check that it is in bounds
@@ -85,7 +86,7 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
         frameSize = (((uint16_t)cdc.read()) << 8) | ((uint16_t)cdc.read());
 
         // If the frame size is larger then the buffer, something went wrong and should
-        // go back to looking for deliminator a byte aat a time (get back on track)
+        // go back to looking for deliminator a byte at a time (get back on track)
         if(frameSize >= STREAM_BUFFER_SIZE){
           frameSize = 0;
           frameDeliminatorAcquired = false;
@@ -94,20 +95,20 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
 
       // If the frame size was determined, fill buffer with incoming data and then return true to signify filled
       if(frameSize != 0){
-        // Check that the starting index + the numbers of bytes to read from that
-        // index does not exceed the buffer size. If it does, search for deliminator
+        // Ensure starting index + the numbers of bytes to read is < buffer size, otherwise, search for deliminator
         uint16_t bytesToReadCount = frameSize-(jpegBufIndex+1);
-        if(jpegBufIndex + bytesToReadCount < STREAM_BUFFER_SIZE){
-          jpegBufIndex += cdc.read(jpegBuf + jpegBufIndex, bytesToReadCount);
-          if(frameSize-(jpegBufIndex+1) == 0){
-            frameSize = 0;
-            frameDeliminatorAcquired = false;
-            return true;
-          }
-        }else{
+
+        // Check if jpeg buffer is full, if so, go back to deliminator searching
+        // (should be quick if on track), and return that buffer is full
+        if(bytesToReadCount == 0){
           frameSize = 0;
           frameDeliminatorAcquired = false;
+          return true;
         }
+
+        // Read serial bytes into jpeg buffer starting at 'jpegBufIndex', 
+        // also increment 'jpegBufIndex' by number of bytes read
+        jpegBufIndex += cdc.read(jpegBuf + jpegBufIndex, bytesToReadCount);
       }
 
     }else{                          // No deliminator, need to ensure on track for collecting data in right order
@@ -132,32 +133,6 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
     }
   }
 
-
-
-  // // Take care of the entire serial buffer this time
-  // while(Serial.available()){
-
-  //   // Store the just read from serial byte in deliminator buffer
-  //   frameDelim[4] = currentByte;
-
-  //   // Also store the next byte in the frame buffer as long as received at least one seperator before
-  //   if(gotFirstDelim){
-  //     jpegBuf[jpegBufIndex] = currentByte;
-  //     jpegBufIndex++;
-  //   }
-
-  //   if(frameDelim[0] == 'F' && frameDelim[1] == 'R' && frameDelim[2] == 'A' && frameDelim[3] == 'M' && frameDelim[4] == 'E'){
-  //     gotFirstDelim = true;
-
-  //     if(jpegBufIndex > 0){
-  //       // Return true since the next deliminator for the next frame was found (and should go in the other jpeg buffer)
-  //       return true;
-  //     }
-  //   }else if(frameDelim[0] == 'T' && frameDelim[1] == 'Y' && frameDelim[2] == 'P' && frameDelim[3] == 'E'){
-  //     Serial.print("TV2");
-  //   }
-  // }
-
   // No buffer filled, return false for now and wait for 
   // more serial data to finish the work to fill this buffer
   return false;
@@ -165,8 +140,8 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
 
 
 void loop(){
-  // Check which buffer is locked by this core and continue the work there. When the work is
-  // finished for the current buffer, make sure to set it as unlocked for the decoding core
+  // Check which buffer is locked by this core and fill it. When the
+  // locked buffer is full, set it as waiting for the decoding core
   if(jpegBuf0Semaphore == LOCKED_BY_CORE_0){
     if(fillJpegBufferFromSerial(jpegBuf0, jpegBuf0Index)){
       jpegBuf0Semaphore = WAITING_FOR_CORE_1;
@@ -205,7 +180,7 @@ void setup1(){
   jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
   jpeg.setMaxOutputSize(2048);
 
-  // Calculate limits used for cropping corners of output frames
+  // Calculate limits used for cropping corners of output frames (could be done in a nicer way, whatever)
   for(int y=0; y<CORNER_CROP_RADIUS; y++){
     int x=0;
     while(x < WIDTH){
@@ -231,7 +206,6 @@ int draw(JPEGDRAW* block){
 
         // Check that the pixel within the block is within screen bounds and then draw
         if(x < WIDTH && y < HEIGHT){
-          // Only draw non-cropped pixels when crop check returns that this pixel is to not be cropped
           int blockPixelIndex = by * block->iWidth + bx;
           int bufferIndex = y * WIDTH + x;
           screenBuffer[bufferIndex] = ((uint16_t*)block->pPixels)[blockPixelIndex];

@@ -66,11 +66,11 @@ let detectedTV = false;
 
 
 const targetFrameLength = 9000;
-const targetFrameLengthMargin = 500;
+const targetFrameLengthMargin = 1000;
 const targetFrameLengthMin = targetFrameLength-targetFrameLengthMargin;
 const targetFrameLengthMax = targetFrameLength+targetFrameLengthMargin;
 let jpegQuality = 0.6;
-let jpegQualityStep = 0.05;
+let jpegQualityStep = 0.1;
 
 
 // Check if WebSerial is supported in this browser
@@ -82,10 +82,12 @@ if (!("serial" in navigator)){
 }else{
     let timeout = undefined;;
     let askType = () => {
-        timeout = setTimeout(() => {
-            serial.write("TYPE", true);
-            askType();
-        }, 100);
+        if(detectedTV == false){
+            timeout = setTimeout(() => {
+                serial.write("TYPE", true);
+                askType();
+            }, 100);
+        }
     }
 
     let collectedData = "";
@@ -96,13 +98,15 @@ if (!("serial" in navigator)){
     let sentCount = 0;
     let ct0 = 0;
 
+    let wroteFrame = true;
+
     let processFrame = (now, metadata) => {
         
         ct0 = performance.now();
         let dt = (performance.now() - t0) / 1000;
         let fps = 1.0 / dt;
 
-        if(fps <= parseInt(24)){
+        if(fps <= parseInt(30)){
             t0 = performance.now();
 
             // Draw frame to canvas and scale
@@ -110,37 +114,25 @@ if (!("serial" in navigator)){
 
             let frameLength = 0;
 
-            let recursiveAdjust = () => {
-                offscreenCanvasOutput.convertToBlob({type: "image/jpeg", quality: jpegQuality}).then((blob) => {
-                    frameLength = blob.size;
+            offscreenCanvasOutput.convertToBlob({type: "image/jpeg", quality: 0.8}).then((blob) => {
+                frameLength = blob.size;
 
-                    if(frameLength < targetFrameLengthMin && jpegQuality + jpegQualityStep <= 1.0){
-                        jpegQuality += jpegQualityStep;
-                        recursiveAdjust();
-                    }else if(frameLength > targetFrameLengthMax && jpegQuality - jpegQualityStep >= 0.0){
-                        jpegQuality -= jpegQualityStep;
-                        recursiveAdjust();
-                    }else{
-                        spanJPEGQuality.innerText = "JPEG Quality: " + (100.0 * jpegQuality).toFixed(0) + "%";
-                        spanFrameLength.innerText = "Frame length: " + frameLength;
+                spanFrameLength.innerText = "Frame length: " + frameLength;
 
-                        // Handle sending frames
-                        if(serial.connected){
-                            blob.arrayBuffer().then(async (buffer) => {
-                                await serial.write("FRAME", true);
-                                await serial.write(new Uint8Array([(frameLength >> 8) & 0b11111111, frameLength & 0b11111111]), false);
-                                await serial.write(new Uint8Array(buffer), false);
-                            });
-                        }
-        
-                        // Handle drawing scaled and jpeg compressed frames in preview
-                        createImageBitmap(blob, 0, 0, canvasOutput.width, canvasOutput.height).then((bitmap) => {
-                            ctx.drawImage(bitmap, 0, 0, canvasOutput.width, canvasOutput.height);
-                        });
-                    }
+                // Handle sending frames
+                if(serial.connected){
+                    blob.arrayBuffer().then(async (buffer) => {
+                        await serial.write("FRAME", true);
+                        await serial.write(new Uint8Array([(frameLength >> 8) & 0b11111111, frameLength & 0b11111111]), false);
+                        await serial.write(new Uint8Array(buffer), false);
+                    });
+                }
+
+                // Handle drawing scaled and jpeg compressed frames in preview
+                createImageBitmap(blob, 0, 0, canvasOutput.width, canvasOutput.height).then((bitmap) => {
+                    ctx.drawImage(bitmap, 0, 0, canvasOutput.width, canvasOutput.height);
                 });
-            }
-            recursiveAdjust();
+            });
         }
 
         videoCapture.requestVideoFrameCallback(processFrame);
