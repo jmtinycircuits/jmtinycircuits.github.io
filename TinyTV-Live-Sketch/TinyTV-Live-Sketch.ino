@@ -1,6 +1,6 @@
 #include <TFT_eSPI.h>
 #include <JPEGDEC.h>
-#include "Adafruit_USBD_CDC.h"
+#include <Adafruit_TinyUSB.h>
 
 
 // Screen and drawing area parameters
@@ -8,6 +8,8 @@
 #define Y 0
 #define WIDTH 216
 #define HEIGHT 135
+
+#define STREAM_BUFFER_SIZE 15000
 
 // Crop parameter
 #define CORNER_CROP_RADIUS 25
@@ -17,6 +19,7 @@
 // F R A M E (read/write by core 0)
 uint8_t frameDelim[5];
 bool gotFirstDelim = false;
+Adafruit_USBD_CDC cdc;
 
 // Where in either buffer we are putting bytes from serial (read/write core 0)
 uint16_t jpegBuf0Index = 0;
@@ -38,8 +41,8 @@ uint8_t cropRadiusLimits[CORNER_CROP_RADIUS*2];
 
 // ##### CORE 0 and 1 GLOBALS #####
 // Incoming jpeg frame data with max 0.65 quality (write core 0, read core 1)
-uint8_t jpegBuf0[13000];
-uint8_t jpegBuf1[13000];
+uint8_t jpegBuf0[STREAM_BUFFER_SIZE];
+uint8_t jpegBuf1[STREAM_BUFFER_SIZE];
 
 enum JPEG_BUF_SEMAPHORE {
   UNLOCKED,
@@ -58,48 +61,93 @@ enum JPEG_BUF_SEMAPHORE jpegBuf0Semaphore = UNLOCKED;
 enum JPEG_BUF_SEMAPHORE jpegBuf1Semaphore = UNLOCKED;
 
 
-
+bool frameDeliminatorAcquired = false;
+uint16_t frameSize = 0;
 
 
 // ***** CORE 0, incoming serial handler *****
 void setup(){
-  Serial.begin(2000000);
+  // Turn this one off since it doesn't provide nice API for buffered streaming
+  Serial.end();
+
+  // Use this instead
+  cdc.begin(2000000);
 }
 
-
-// Returns true when done filling passed buffer
+// Returns true when done filling passed buffer with valid jpeg data (buffer index is used and reset externally)
 bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
-  // Take care of the entire serial buffer this time
-  while(Serial.available()){
-    // Get a single byte at a time (I guess that's all that is possible)
-    uint8_t currentByte = Serial.read();
+  uint16_t available = cdc.available();
+  if(available > 0){
+    if(frameDeliminatorAcquired){   // Found a deliminator and any subsequent data has been confirmed to be on track, store incoming data
 
-    // Move all bytes from right to left in deliminator buffer
-    frameDelim[0] = frameDelim[1];
-    frameDelim[1] = frameDelim[2];
-    frameDelim[2] = frameDelim[3];
-    frameDelim[3] = frameDelim[4];
-
-    // Store the just read from serial byte in deliminator buffer
-    frameDelim[4] = currentByte;
-
-    // Also store the next byte in the frame buffer as long as received at least one seperator before
-    if(gotFirstDelim){
-      jpegBuf[jpegBufIndex] = currentByte;
-      jpegBufIndex++;
-    }
-
-    if(frameDelim[0] == 'F' && frameDelim[1] == 'R' && frameDelim[2] == 'A' && frameDelim[3] == 'M' && frameDelim[4] == 'E'){
-      gotFirstDelim = true;
-
-      if(jpegBufIndex > 0){
-        // Return true since the next deliminator for the next frame was found (and should go in the other jpeg buffer)
-        return true;
+      // Figure out the frame size and check that it is in bounds
+      if(frameSize == 0 && available >= 2){
+        frameSize = (((uint16_t)cdc.read()) << 8) | ((uint16_t)cdc.read());
+        cdc.println("Frame size: ");
+        cdc.println(frameSize);
+        if(frameSize >= STREAM_BUFFER_SIZE){
+          frameSize = 0;
+          frameDeliminatorAcquired = false;
+        }
       }
-    }else if(frameDelim[0] == 'T' && frameDelim[1] == 'Y' && frameDelim[2] == 'P' && frameDelim[3] == 'E'){
-      Serial.print("TV2");
+
+      // If the frame size was determined, fill buffer with incoming data and then return true to signify filled
+      if(frameSize != 0){
+        jpegBufIndex += cdc.read(jpegBuf + jpegBufIndex, frameSize-(jpegBufIndex+1));
+        if(frameSize-(jpegBufIndex+1) == 0){
+          frameSize = 0;
+          frameDeliminatorAcquired = false;
+          return true;
+        }
+      }
+
+    }else{                          // No deliminator, need to ensure on track for collecting data in right order
+      while(cdc.available()){
+        // Move all bytes from right to left in deliminator buffer
+        frameDelim[0] = frameDelim[1];
+        frameDelim[1] = frameDelim[2];
+        frameDelim[2] = frameDelim[3];
+        frameDelim[3] = frameDelim[4];
+
+        // Store the just read from serial byte in deliminator buffer
+        frameDelim[4] = cdc.read();
+
+        if(frameDelim[0] == 'F' && frameDelim[1] == 'R' && frameDelim[2] == 'A' && frameDelim[3] == 'M' && frameDelim[4] == 'E'){
+          frameDeliminatorAcquired = true;
+          cdc.println("frameDeliminatorAcquired");
+          break;
+        }else if(frameDelim[0] == 'T' && frameDelim[1] == 'Y' && frameDelim[2] == 'P' && frameDelim[3] == 'E'){
+          cdc.print("TV2");
+        }
+      }
     }
   }
+
+
+
+  // // Take care of the entire serial buffer this time
+  // while(Serial.available()){
+
+  //   // Store the just read from serial byte in deliminator buffer
+  //   frameDelim[4] = currentByte;
+
+  //   // Also store the next byte in the frame buffer as long as received at least one seperator before
+  //   if(gotFirstDelim){
+  //     jpegBuf[jpegBufIndex] = currentByte;
+  //     jpegBufIndex++;
+  //   }
+
+  //   if(frameDelim[0] == 'F' && frameDelim[1] == 'R' && frameDelim[2] == 'A' && frameDelim[3] == 'M' && frameDelim[4] == 'E'){
+  //     gotFirstDelim = true;
+
+  //     if(jpegBufIndex > 0){
+  //       // Return true since the next deliminator for the next frame was found (and should go in the other jpeg buffer)
+  //       return true;
+  //     }
+  //   }else if(frameDelim[0] == 'T' && frameDelim[1] == 'Y' && frameDelim[2] == 'P' && frameDelim[3] == 'E'){
+  //     Serial.print("TV2");
+  //   }
+  // }
 
   // No buffer filled, return false for now and wait for 
   // more serial data to finish the work to fill this buffer

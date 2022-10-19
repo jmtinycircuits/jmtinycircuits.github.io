@@ -54,6 +54,7 @@ let btnConnectTV = document.getElementById("btnConnectTV");
 let videoCapture = document.getElementById("videoCapture");
 
 let spanJPEGQuality = document.getElementById("spanJPEGQuality");
+let spanFrameLength = document.getElementById("spanFrameLength");
 
 let offscreenCanvasOutput = new OffscreenCanvas(216, 135);
 let offscreenCtx = offscreenCanvasOutput.getContext("2d");
@@ -64,7 +65,7 @@ let ctx = canvasOutput.getContext("2d");
 let detectedTV = false;
 
 
-const targetFrameLength = 8000;
+const targetFrameLength = 9000;
 const targetFrameLengthMargin = 500;
 const targetFrameLengthMin = targetFrameLength-targetFrameLengthMargin;
 const targetFrameLengthMax = targetFrameLength+targetFrameLengthMargin;
@@ -121,12 +122,14 @@ if (!("serial" in navigator)){
                         recursiveAdjust();
                     }else{
                         spanJPEGQuality.innerText = "JPEG Quality: " + (100.0 * jpegQuality).toFixed(0) + "%";
+                        spanFrameLength.innerText = "Frame length: " + frameLength;
 
                         // Handle sending frames
                         if(serial.connected){
-                            blob.arrayBuffer().then((buffer) => {
-                                serial.write(new Uint8Array(buffer), false);
-                                serial.write("FRAME", true);
+                            blob.arrayBuffer().then(async (buffer) => {
+                                await serial.write("FRAME", true);
+                                await serial.write(new Uint8Array([(frameLength >> 8) & 0b11111111, frameLength & 0b11111111]), false);
+                                await serial.write(new Uint8Array(buffer), false);
                             });
                         }
         
@@ -208,6 +211,7 @@ if (!("serial" in navigator)){
         showOrHideElement("divStreamingInterface", false);
     }
     serial.onData = (data) => {
+        console.log(decoder.decode(data));
         if(detectedTV == false){
             collectedData += decoder.decode(data);
             if(collectedData.indexOf("TV2") != -1){
