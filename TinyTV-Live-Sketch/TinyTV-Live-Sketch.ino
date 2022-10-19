@@ -83,8 +83,9 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
       // Figure out the frame size and check that it is in bounds
       if(frameSize == 0 && available >= 2){
         frameSize = (((uint16_t)cdc.read()) << 8) | ((uint16_t)cdc.read());
-        cdc.println("Frame size: ");
-        cdc.println(frameSize);
+
+        // If the frame size is larger then the buffer, something went wrong and should
+        // go back to looking for deliminator a byte aat a time (get back on track)
         if(frameSize >= STREAM_BUFFER_SIZE){
           frameSize = 0;
           frameDeliminatorAcquired = false;
@@ -93,11 +94,19 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
 
       // If the frame size was determined, fill buffer with incoming data and then return true to signify filled
       if(frameSize != 0){
-        jpegBufIndex += cdc.read(jpegBuf + jpegBufIndex, frameSize-(jpegBufIndex+1));
-        if(frameSize-(jpegBufIndex+1) == 0){
+        // Check that the starting index + the numbers of bytes to read from that
+        // index does not exceed the buffer size. If it does, search for deliminator
+        uint16_t bytesToReadCount = frameSize-(jpegBufIndex+1);
+        if(jpegBufIndex + bytesToReadCount < STREAM_BUFFER_SIZE){
+          jpegBufIndex += cdc.read(jpegBuf + jpegBufIndex, bytesToReadCount);
+          if(frameSize-(jpegBufIndex+1) == 0){
+            frameSize = 0;
+            frameDeliminatorAcquired = false;
+            return true;
+          }
+        }else{
           frameSize = 0;
           frameDeliminatorAcquired = false;
-          return true;
         }
       }
 
@@ -112,9 +121,9 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
         // Store the just read from serial byte in deliminator buffer
         frameDelim[4] = cdc.read();
 
+        // Check to see if the frame deliminator is found, or if a command should be responded to
         if(frameDelim[0] == 'F' && frameDelim[1] == 'R' && frameDelim[2] == 'A' && frameDelim[3] == 'M' && frameDelim[4] == 'E'){
           frameDeliminatorAcquired = true;
-          cdc.println("frameDeliminatorAcquired");
           break;
         }else if(frameDelim[0] == 'T' && frameDelim[1] == 'Y' && frameDelim[2] == 'P' && frameDelim[3] == 'E'){
           cdc.print("TV2");
