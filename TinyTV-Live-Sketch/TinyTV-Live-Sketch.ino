@@ -1,6 +1,7 @@
 #include <TFT_eSPI.h>
 #include <JPEGDEC.h>
 #include <Adafruit_TinyUSB.h>
+#include "JPEGStreamer.h"
 
 
 // Screen and drawing area parameters
@@ -9,7 +10,8 @@
 #define WIDTH 216
 #define HEIGHT 135
 
-#define STREAM_BUFFER_SIZE 15000
+
+#define STREAM_BUFFER_SIZE 20000
 
 // Crop parameter
 #define CORNER_CROP_RADIUS 25
@@ -18,15 +20,16 @@
 // ##### CORE 0 GLOBALS #####
 // F R A M E (read/write by core 0)
 uint8_t frameDelim[5];
-bool gotFirstDelim = false;
 Adafruit_USBD_CDC cdc;
 
 // Where in either buffer we are putting bytes from serial (read/write core 0)
 uint16_t jpegBuf0Index = 0;
 uint16_t jpegBuf1Index = 0;
 
-
+// Flag to track if on track to store incoming data
 bool frameDeliminatorAcquired = false;
+
+// The incoming frame size as received after deliminator
 uint16_t frameSize = 0;
 
 
@@ -108,7 +111,7 @@ bool fillJpegBufferFromSerial(uint8_t *jpegBuf, uint16_t &jpegBufIndex){
           return true;
         }
 
-        // Read serial bytes into jpeg buffer starting at 'jpegBufIndex', 
+        // Read serial bytes into jpeg buffer starting at 'jpegBufIndex',
         // also increment 'jpegBufIndex' by number of bytes read
         jpegBufIndex += cdc.read(jpegBuf + jpegBufIndex, bytesToReadCount);
       }
