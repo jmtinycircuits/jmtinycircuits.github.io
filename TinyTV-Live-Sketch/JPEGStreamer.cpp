@@ -1,11 +1,11 @@
 #include "JPEGStreamer.h"
 
 
-JPEGStreamer::JPEGStreamer(JPEGDEC *_jpeg, Adafruit_USBD_CDC *_cdc, int8_t _tinytvType){
+JPEGStreamer::JPEGStreamer(JPEGDEC *_jpeg, Adafruit_USBD_CDC *_cdc, uint8_t _tinyTVType){
   jpeg = _jpeg;
   cdc = _cdc;
 
-  tinytvType = _tinytvType;
+  tinyTVType = _tinyTVType;
 }
 
 
@@ -94,9 +94,9 @@ bool JPEGStreamer::fillJpegBufferFromCDC(uint8_t *jpegBuffer, const uint16_t jpe
           frameDeliminatorAcquired = true;
           break;
         }else if(commandBuffer[0] == 'T' && commandBuffer[1] == 'Y' && commandBuffer[2] == 'P' && commandBuffer[3] == 'E'){
-          if(tinytvType == TINYTV_TYPE::TINYTV_2){
+          if(tinyTVType == TINYTV_TYPE::TINYTV_2){
             cdc->print("TV2");
-          }else if(tinytvType == TINYTV_TYPE::TINYTV_MINI){
+          }else if(tinyTVType == TINYTV_TYPE::TINYTV_MINI){
             cdc->print("TVMINI");
           }
         }

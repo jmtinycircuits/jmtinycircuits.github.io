@@ -11,7 +11,7 @@
 // immediately be pushed to the screen.
 class JPEGStreamer{
   public:
-    JPEGStreamer(JPEGDEC *_jpeg, Adafruit_USBD_CDC *_cdc, int8_t _tinytvType);
+    JPEGStreamer(JPEGDEC *_jpeg, Adafruit_USBD_CDC *_cdc, uint8_t _tinyTVType);
 
     // Main functions to call on separate cores
     void fillBuffers(uint8_t *jpegBuffer0, uint8_t *jpegBuffer1, const uint16_t jpegBufferSize); // Both buffers are expected to be the same size
@@ -57,7 +57,7 @@ class JPEGStreamer{
     // to fill buffers. False means to look for commands or deliminator
     bool frameDeliminatorAcquired = false;
 
-    int8_t tinytvType = -1;
+    uint8_t tinyTVType = 0;
 };
 
 #endif
