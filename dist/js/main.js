@@ -98,6 +98,7 @@ if (!("serial" in navigator)){
     let sentCount = 0;
     let ct0 = 0;
 
+    // Very important to not write frames while other frames are being written! One frame at a time (otherwise get could nto open error 4 in firmware)
     let wroteFrame = true;
 
     let processFrame = (now, metadata) => {
@@ -114,25 +115,29 @@ if (!("serial" in navigator)){
 
             let frameLength = 0;
 
-            offscreenCanvasOutput.convertToBlob({type: "image/jpeg", quality: 0.8}).then((blob) => {
-                frameLength = blob.size;
+            if(wroteFrame == true){
+                wroteFrame = false;
+                offscreenCanvasOutput.convertToBlob({type: "image/jpeg", quality: 0.8}).then((blob) => {
+                    frameLength = blob.size;
 
-                spanFrameLength.innerText = "Frame length: " + frameLength;
+                    spanFrameLength.innerText = "Frame length: " + frameLength;
 
-                // Handle sending frames
-                if(serial.connected){
-                    blob.arrayBuffer().then(async (buffer) => {
-                        await serial.write("FRAME", true);
-                        await serial.write(new Uint8Array([(frameLength >> 8) & 0b11111111, frameLength & 0b11111111]), false);
-                        await serial.write(new Uint8Array(buffer), false);
+                    // Handle sending frames
+                    if(serial.connected){
+                        blob.arrayBuffer().then(async (buffer) => {
+                            await serial.write("FRAME", true);
+                            await serial.write(new Uint8Array([(frameLength >> 8) & 0b11111111, frameLength & 0b11111111]), false);
+                            await serial.write(new Uint8Array(buffer), false);
+                            wroteFrame = true;
+                        });
+                    }
+
+                    // Handle drawing scaled and jpeg compressed frames in preview
+                    createImageBitmap(blob, 0, 0, canvasOutput.width, canvasOutput.height).then((bitmap) => {
+                        ctx.drawImage(bitmap, 0, 0, canvasOutput.width, canvasOutput.height);
                     });
-                }
-
-                // Handle drawing scaled and jpeg compressed frames in preview
-                createImageBitmap(blob, 0, 0, canvasOutput.width, canvasOutput.height).then((bitmap) => {
-                    ctx.drawImage(bitmap, 0, 0, canvasOutput.width, canvasOutput.height);
                 });
-            });
+            }
         }
 
         videoCapture.requestVideoFrameCallback(processFrame);

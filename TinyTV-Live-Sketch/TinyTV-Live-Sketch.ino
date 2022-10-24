@@ -22,8 +22,8 @@ JPEGStreamer streamer(&jpeg, &cdc);
 uint16_t screenBuffer[WIDTH * HEIGHT];
 uint8_t cropRadiusLimits[CORNER_CROP_RADIUS*2];
 
-uint8_t videoBuffer0[15000];
-uint8_t videoBuffer1[15000];
+uint8_t videoBuffer0[20000];
+uint8_t videoBuffer1[20000];
 
 
 // Update the bytes in the screen buffer when decoding jpeg frame

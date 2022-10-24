@@ -107,7 +107,8 @@ bool JPEGStreamer::fillJpegBufferFromCDC(uint8_t *jpegBuffer, const uint16_t jpe
 void JPEGStreamer::decode(uint8_t *jpegBuffer, uint16_t &jpegBufferIndex, JPEG_DRAW_CALLBACK *pfnDraw){
   // Open and decode
   if (!jpeg->openRAM(jpegBuffer, jpegBufferIndex-5, pfnDraw)){
-    cdc->println("Could not open frame from RAM!");
+    cdc->print("Could not open frame from RAM! Error (https://github.com/bitbank2/JPEGDEC/blob/master/src/JPEGDEC.h#L83): ");
+    cdc->println(jpeg->getLastError());
   }
   jpeg->decode(0, 0, 0);
 
