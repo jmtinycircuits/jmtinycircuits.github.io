@@ -52,6 +52,8 @@ bool JPEGStreamer::fillJpegBufferFromCDC(uint8_t *jpegBuffer, const uint16_t jpe
   uint16_t available = cdc->available();
   if(available > 0){
     if(frameDeliminatorAcquired){
+      // Must be jpeg data, reset timeout timer
+      noJpegDataTimerStart = 0;
 
       // Figure out the frame size and go back to deliminator searching if out of bounds
       if(frameSize == 0 && available >= 2){
@@ -98,6 +100,17 @@ bool JPEGStreamer::fillJpegBufferFromCDC(uint8_t *jpegBuffer, const uint16_t jpe
       }
     }
   }
+  // else if(frameDeliminatorAcquired){
+  //   // No jpeg data but waiting for it, handle timeout timer
+  //   if(noJpegDataTimerStart == 0){
+  //     noJpegDataTimerStart = millis();
+  //   }else if(millis() - noJpegDataTimerStart >= noJpegDataTimeoutms){
+  //     frameSize = 0;
+  //     frameDeliminatorAcquired = false;
+  //     noJpegDataTimerStart = 0;
+  //     cdc->println("TIMEOUT!");
+  //   }
+  // }
 
   // No buffer filled, return false for now and wait for more serial data to finish filling this buffer
   return false;

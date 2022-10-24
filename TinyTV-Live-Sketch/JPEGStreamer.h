@@ -51,6 +51,10 @@ class JPEGStreamer{
     // Flag set true when 'FRAME' found in incoming serial and it's time
     // to fill buffers. False means to look for commands or deliminator
     bool frameDeliminatorAcquired = false;
+
+    // If in state waiting for jpeg data and it stops, need to timeout to watch for commands
+    const uint16_t noJpegDataTimeoutms = 7000;
+    uint16_t noJpegDataTimerStart = 0;
 };
 
 #endif

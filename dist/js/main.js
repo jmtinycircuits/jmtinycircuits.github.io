@@ -122,7 +122,7 @@ if (!("serial" in navigator)){
 
                     spanFrameLength.innerText = "Frame length: " + frameLength;
 
-                    // Handle sending frames
+                    // Handle sending frames. If no serial connected, set the frame as written (gets rid of bug where you can only start streaming once)
                     if(serial.connected){
                         blob.arrayBuffer().then(async (buffer) => {
                             await serial.write("FRAME", true);
@@ -130,6 +130,8 @@ if (!("serial" in navigator)){
                             await serial.write(new Uint8Array(buffer), false);
                             wroteFrame = true;
                         });
+                    }else{
+                        wroteFrame = true;
                     }
 
                     // Handle drawing scaled and jpeg compressed frames in preview
@@ -203,6 +205,7 @@ if (!("serial" in navigator)){
         btnConnectTV.onclick = serial.connect.bind(serial);
 
         detectedTV = false;
+        wroteFrame = true;
 
         showOrHideElement("divDetectingTVType", false);
         showOrHideElement("divStreamingInterface", false);
