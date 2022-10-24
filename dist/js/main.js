@@ -216,8 +216,12 @@ if (!("serial" in navigator)){
             collectedData += decoder.decode(data);
             if(collectedData.indexOf("TV2") != -1){
                 onDetection("TinyTV 2");
-            }else if(collectedData.indexOf("TVMini") != -1){
+                canvasOutput.width = offscreenCanvasOutput.width = 216;
+                canvasOutput.height = offscreenCanvasOutput.height = 135;
+            }else if(collectedData.indexOf("TVMINI") != -1){
                 onDetection("TinyTV Mini");
+                canvasOutput.width = offscreenCanvasOutput.width = 64;
+                canvasOutput.height = offscreenCanvasOutput.height = 64;
             }
         }
     }

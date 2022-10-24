@@ -11,7 +11,7 @@
 // immediately be pushed to the screen.
 class JPEGStreamer{
   public:
-    JPEGStreamer(JPEGDEC *_jpeg, Adafruit_USBD_CDC *_cdc);
+    JPEGStreamer(JPEGDEC *_jpeg, Adafruit_USBD_CDC *_cdc, int8_t _tinytvType);
 
     // Main functions to call on separate cores
     void fillBuffers(uint8_t *jpegBuffer0, uint8_t *jpegBuffer1, const uint16_t jpegBufferSize); // Both buffers are expected to be the same size
@@ -19,11 +19,16 @@ class JPEGStreamer{
   
     // Enum values used for locking access between core 
     // for jpeg buffers 'jpegBuffer0' and 'jpegBuffer1'
-    enum JPEG_BUFFER_SEMAPHORE {
+    enum JPEG_BUFFER_SEMAPHORE{
         UNLOCKED,
         LOCKED_BY_CORE_0,
         LOCKED_BY_CORE_1,
         WAITING_FOR_CORE_1
+    };
+
+    enum TINYTV_TYPE{
+        TINYTV_2,
+        TINYTV_MINI
     };
 
 
@@ -52,9 +57,7 @@ class JPEGStreamer{
     // to fill buffers. False means to look for commands or deliminator
     bool frameDeliminatorAcquired = false;
 
-    // If in state waiting for jpeg data and it stops, need to timeout to watch for commands
-    const uint16_t noJpegDataTimeoutms = 7000;
-    uint16_t noJpegDataTimerStart = 0;
+    int8_t tinytvType = -1;
 };
 
 #endif

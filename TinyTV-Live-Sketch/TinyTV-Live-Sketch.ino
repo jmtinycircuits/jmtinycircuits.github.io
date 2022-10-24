@@ -1,6 +1,7 @@
 #include <TFT_eSPI.h>
 #include <JPEGDEC.h>
 #include <Adafruit_TinyUSB.h>
+#include "pico/stdlib.h"
 #include "JPEGStreamer.h"
 
 
@@ -17,7 +18,7 @@
 Adafruit_USBD_CDC cdc;
 TFT_eSPI tft = TFT_eSPI();
 JPEGDEC jpeg;
-JPEGStreamer streamer(&jpeg, &cdc);
+JPEGStreamer streamer(&jpeg, &cdc, JPEGStreamer::TINYTV_TYPE::TINYTV_2);
 
 uint16_t screenBuffer[WIDTH * HEIGHT];
 uint8_t cropRadiusLimits[CORNER_CROP_RADIUS*2];
@@ -100,6 +101,8 @@ void setup(){
       x++;
     }
   }
+
+  // while(set_sys_clock_khz(250000, false) == false){};
 }
 
 void setup1(){}
