@@ -113,7 +113,7 @@ bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize
       return true;
     }
 
-    // Make sure will not go out of bounds with this read (ideally, the rest of the program would ensure this never happens, doesn't seem to be the case...)
+    // Just in case, check if this read will take us out of bounds, if so, restart (shouldn't happen except for future changes forgetting about this)
     if(jpegBufferReadCount+bytesToReadCount < frameSize){
       jpegBufferReadCount += cdc->read(jpegBuffer + jpegBufferReadCount, bytesToReadCount);
     }else{
@@ -145,8 +145,14 @@ bool JPEGStreamer::incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBu
       commandSearch();
     }
   }else if(millis() - liveTimeoutStart >= liveTimeoutLimitms){
+    // A timeout is a time to reset states of both jpeg buffers, reset everything
     stopBufferFilling();
     live = false;
+
+    // Wait for decoding to finish and then reset incoming jpeg data read counts (otherwise may start at something other than zero next time)
+    while(jpegBuffer0Semaphore != JPEG_BUFFER_SEMAPHORE::UNLOCKED && jpegBuffer1Semaphore != JPEG_BUFFER_SEMAPHORE::UNLOCKED){}
+    jpegBuffer0ReadCount = 0;
+    jpegBuffer1ReadCount = 0;
   }
 
   // No buffer filled, wait for more bytes
