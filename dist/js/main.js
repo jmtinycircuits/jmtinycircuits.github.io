@@ -197,7 +197,7 @@ if (!("serial" in navigator)){
         // Wait a tiny bit so that the user can see the text and stuff just doesn't go flying past
         setTimeout(() => {
             askType();
-        }, 400);
+        }, 250);
     }
     serial.onDisconnect = () => {
         // Handle switching button

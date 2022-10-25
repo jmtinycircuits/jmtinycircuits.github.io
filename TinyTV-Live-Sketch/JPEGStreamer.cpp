@@ -113,7 +113,13 @@ bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize
       return true;
     }
 
-    jpegBufferReadCount += cdc->read(jpegBuffer + jpegBufferReadCount, bytesToReadCount);
+    // Make sure will not go out of bounds with this read (ideally, the rest of the program would ensure this never happens, doesn't seem to be the case...)
+    if(jpegBufferReadCount+bytesToReadCount < frameSize){
+      jpegBufferReadCount += cdc->read(jpegBuffer + jpegBufferReadCount, bytesToReadCount);
+    }else{
+      stopBufferFilling();
+      cdc->println("ERROR: Tried to place jpeg data out of bounds...");
+    }
   }
 
   // Buffer not filled yet, wait for more bytes
