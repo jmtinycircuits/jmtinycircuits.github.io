@@ -188,8 +188,15 @@ if (!("serial" in navigator)){
         // Handle switching button
         btnConnectTV.classList.add("btn-warning");
         btnConnectTV.innerText = "Disconnect TV and Stop";
-        btnConnectTV.onclick = serial.disconnect.bind(serial);
+        btnConnectTV.onclick = (event) => {
+            let tracks = videoCapture.srcObject.getTracks();
+            tracks.forEach((track) => track.stop());
+            videoCapture.srcObject = null;
 
+            serial.disconnect();
+        } 
+
+        collectedData = "";
         
         showOrHideElement("divDetectingTVType", true);
 

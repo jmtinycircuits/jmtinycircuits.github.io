@@ -22,8 +22,8 @@ JPEGStreamer streamer(&jpeg, &cdc, JPEGStreamer::TINYTV_TYPE::TINYTV_2);
 
 uint16_t screenBuffer[WIDTH * HEIGHT];
 
-uint8_t videoBuffer0[15000];
-uint8_t videoBuffer1[15000];
+uint8_t videoBuffer0[20000];
+uint8_t videoBuffer1[20000];
 
 
 // Update the bytes in the screen buffer when decoding jpeg frame
@@ -79,16 +79,15 @@ void loop(){
 
 
 void loop1(){
-  if(streamer.live){
+  // if(streamer.live){
     streamer.decode(videoBuffer0, videoBuffer1, screenBuffer, draw);
-  }else{
-    // Not live, do normal video playing stuff
-    for(int i=0; i<WIDTH*HEIGHT; i++){
-      screenBuffer[i] = TFT_CYAN;
-    }
-  }
-
-  effects.cropCorners(screenBuffer, WIDTH, HEIGHT);
+    effects.cropCorners(screenBuffer, WIDTH, HEIGHT);
+  // }else{
+  //   // Not live, do normal video playing stuff
+  //   for(int i=0; i<WIDTH*HEIGHT; i++){
+  //     screenBuffer[i] = TFT_CYAN;
+  //   }
+  // }
 
   // Display
   tft.dmaWait();

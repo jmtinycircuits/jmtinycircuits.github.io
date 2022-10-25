@@ -32,12 +32,24 @@ class JPEGStreamer{
         TINYTV_MINI
     };
 
+    enum COMMAND_TYPE{
+        NONE,
+        FRAME_DELIMINATOR,
+        TINYTV_TYPE
+    };
+
     // Set true when receive 'TYPE' command and set false 
     // when do not receive jpeg data for timeout time
     bool live = false;
   private:
-    bool fillJpegBufferFromCDC(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferIndex);
-    void decode(uint8_t *jpegBuffer, uint16_t &jpegBufferIndex, JPEG_DRAW_CALLBACK *pfnDraw);   // Pass JPEGDec callback function
+    void stopBufferFilling();
+    uint8_t commandCheck();
+    void commandSearch();
+    void noDataTimeoutHandler();
+    bool fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount, uint16_t available);
+    bool incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount);
+
+    void decode(uint8_t *jpegBuffer, uint16_t &jpegBufferReadCount, JPEG_DRAW_CALLBACK *pfnDraw);   // Pass JPEGDec callback function
 
     // Flags to control access to JPEG buffers during filling and decoding
     enum JPEG_BUFFER_SEMAPHORE jpegBuffer0Semaphore = JPEG_BUFFER_SEMAPHORE::UNLOCKED;
@@ -47,8 +59,8 @@ class JPEGStreamer{
     Adafruit_USBD_CDC *cdc;
 
     // Used in 'core0FillBuffers(...)'
-    uint16_t jpegBuffer0Index = 0;
-    uint16_t jpegBuffer1Index = 0;
+    uint16_t jpegBuffer0ReadCount = 0;
+    uint16_t jpegBuffer1ReadCount = 0;
 
     // Used for storing incoming data for checking for commands (e.g. 'TYPE') or deliminator (e.g. 'FRAME')
     uint8_t commandBuffer[5];
@@ -61,6 +73,10 @@ class JPEGStreamer{
     bool frameDeliminatorAcquired = false;
 
     uint8_t tinyTVType = 0;
+
+    bool timeoutActive = false;
+    uint16_t timeoutStart = 0;
+    uint16_t timeoutLimitms = 1000;
 };
 
 #endif
