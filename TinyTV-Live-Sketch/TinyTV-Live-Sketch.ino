@@ -79,15 +79,15 @@ void loop(){
 
 
 void loop1(){
-  // if(streamer.live){
+  if(streamer.live){
     streamer.decode(videoBuffer0, videoBuffer1, screenBuffer, draw);
     effects.cropCorners(screenBuffer, WIDTH, HEIGHT);
-  // }else{
-  //   // Not live, do normal video playing stuff
-  //   for(int i=0; i<WIDTH*HEIGHT; i++){
-  //     screenBuffer[i] = TFT_CYAN;
-  //   }
-  // }
+  }else{
+    // Not live, do normal video playing stuff
+    for(int i=0; i<WIDTH*HEIGHT; i++){
+      screenBuffer[i] = TFT_CYAN;
+    }
+  }
 
   // Display
   tft.dmaWait();

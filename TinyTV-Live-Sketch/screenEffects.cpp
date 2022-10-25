@@ -35,13 +35,13 @@ void RoundCornerEffect::calculateLimits(){
 
 
 void RoundCornerEffect::cropCorners(uint16_t *screenBuffer, uint8_t width, uint8_t height){
-  for(int y=0; y<cropRadius; y++){
-    for(int x=0; x<cropRadiusLimits[y]; x++){
-      int topLeftBufferIndex = y * width + x;
-      int topRightBufferIndex = y * width + ((width-1) - x);
+  for(uint8_t y=0; y<cropRadius; y++){
+    for(uint8_t x=0; x<cropRadiusLimits[y]; x++){
+      uint16_t topLeftBufferIndex = y * width + x;
+      uint16_t topRightBufferIndex = y * width + ((width-1) - x);
 
-      int bottomLeftBufferIndex = ((height-1) - y) * width + x;
-      int bottomRightBufferIndex = ((height-1) - y) * width + ((width-1) - x);
+      uint16_t bottomLeftBufferIndex = ((height-1) - y) * width + x;
+      uint16_t bottomRightBufferIndex = ((height-1) - y) * width + ((width-1) - x);
 
       screenBuffer[topLeftBufferIndex] = 0;
       screenBuffer[topRightBufferIndex] = 0;

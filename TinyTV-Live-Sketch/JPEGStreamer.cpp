@@ -106,15 +106,13 @@ bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize
 
   // If the frame size was determined, get number of bytes to read, check if done filling, then fill if not done
   if(frameSize != 0){
-    uint16_t bytesToReadCount = frameSize - jpegBufferReadCount;
+    uint16_t bytesToReadCount = frameSize - (jpegBufferReadCount+1);
 
-    // Check if buffer full, stop and search for commands again if so
     if(bytesToReadCount == 0){
       stopBufferFilling();
       return true;
     }
 
-    // Fill buffer at current index defined by number of bytes read, increase number of read bytes count
     jpegBufferReadCount += cdc->read(jpegBuffer + jpegBufferReadCount, bytesToReadCount);
   }
 
@@ -123,19 +121,23 @@ bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize
 }
 
 
-// Either respond to commands, switch fill states, or timeout live flag
+// Either respond to commands, switch fill states plus fill buffers, or timeout live flag
 bool JPEGStreamer::incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount){
   uint16_t available = cdc->available();
 
   if(available > 0){
+    liveTimeoutStart = millis();
+
     if(frameDeliminatorAcquired){
+      live = true;
       return fillBuffer(jpegBuffer, jpegBufferSize, jpegBufferReadCount, available);
     }else{
       // Search for deliminator to get back to filling buffers or respond to commands
       commandSearch();
     }
-  }else{
-
+  }else if(millis() - liveTimeoutStart >= liveTimeoutLimitms){
+    stopBufferFilling();
+    live = false;
   }
 
   // No buffer filled, wait for more bytes
