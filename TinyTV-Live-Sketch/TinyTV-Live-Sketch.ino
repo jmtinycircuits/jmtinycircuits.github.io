@@ -13,9 +13,8 @@
 #define WIDTH 216
 #define HEIGHT 135
 
-
 Adafruit_USBD_CDC cdc;
-TFT_eSPI tft = TFT_eSPI();
+TFT_eSPI tft;
 JPEGDEC jpeg;
 
 ScreenEffects effects(ScreenEffects::TINYTV_TYPE::TINYTV_2);
@@ -80,7 +79,15 @@ void loop(){
 
 
 void loop1(){
-  streamer.decode(videoBuffer0, videoBuffer1, screenBuffer, draw);
+  if(streamer.live){
+    streamer.decode(videoBuffer0, videoBuffer1, screenBuffer, draw);
+  }else{
+    // Not live, do normal video playing stuff
+    for(int i=0; i<WIDTH*HEIGHT; i++){
+      screenBuffer[i] = TFT_CYAN;
+    }
+  }
+
   effects.cropCorners(screenBuffer, WIDTH, HEIGHT);
 
   // Display

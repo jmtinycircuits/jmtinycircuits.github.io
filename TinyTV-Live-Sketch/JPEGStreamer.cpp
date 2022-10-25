@@ -49,7 +49,6 @@ void JPEGStreamer::decode(uint8_t *jpegBuffer0, uint8_t *jpegBuffer1, uint16_t *
 }
 
 
-
 bool JPEGStreamer::fillJpegBufferFromCDC(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferIndex){
   uint16_t available = cdc->available();
   if(available > 0){
@@ -94,6 +93,9 @@ bool JPEGStreamer::fillJpegBufferFromCDC(uint8_t *jpegBuffer, const uint16_t jpe
           frameDeliminatorAcquired = true;
           break;
         }else if(commandBuffer[0] == 'T' && commandBuffer[1] == 'Y' && commandBuffer[2] == 'P' && commandBuffer[3] == 'E'){
+          // Got type command, time to go live!
+          live = true;
+          
           if(tinyTVType == TINYTV_TYPE::TINYTV_2){
             cdc->print("TV2");
           }else if(tinyTVType == TINYTV_TYPE::TINYTV_MINI){
@@ -111,9 +113,10 @@ bool JPEGStreamer::fillJpegBufferFromCDC(uint8_t *jpegBuffer, const uint16_t jpe
 
 void JPEGStreamer::decode(uint8_t *jpegBuffer, uint16_t &jpegBufferIndex, JPEG_DRAW_CALLBACK *pfnDraw){
   // Open and decode
-  if (!jpeg->openRAM(jpegBuffer, jpegBufferIndex-5, pfnDraw)){
-    cdc->print("Could not open frame from RAM! Error (https://github.com/bitbank2/JPEGDEC/blob/master/src/JPEGDEC.h#L83): ");
+  if (!jpeg->openRAM(jpegBuffer, jpegBufferIndex, pfnDraw)){
+    cdc->print("Could not open frame from RAM! Error: ");
     cdc->println(jpeg->getLastError());
+    cdc->println("See https://github.com/bitbank2/JPEGDEC/blob/master/src/JPEGDEC.h#L83");
   }
   jpeg->decode(0, 0, 0);
 

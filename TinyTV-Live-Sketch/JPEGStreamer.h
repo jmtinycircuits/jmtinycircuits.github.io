@@ -3,6 +3,7 @@
 
 #include <JPEGDEC.h>
 #include <Adafruit_TinyUSB.h>
+#include <stdlib.h>
 
 
 // When 'fillBuffers' and 'decode' are called on separate cores,
@@ -15,7 +16,7 @@ class JPEGStreamer{
 
     // Main functions to call on separate cores
     void fillBuffers(uint8_t *jpegBuffer0, uint8_t *jpegBuffer1, const uint16_t jpegBufferSize); // Both buffers are expected to be the same size
-    void decode(uint8_t *jpegBuffer0, uint8_t *jpegBuffer1, uint16_t *screenBuffer, JPEG_DRAW_CALLBACK *pfnDraw);  // Pass JPEGDec callback function
+    void decode(uint8_t *jpegBuffer0, uint8_t *jpegBuffer1, uint16_t *screenBuffer, JPEG_DRAW_CALLBACK *pfnDraw);  // Pass JPEGDec callback function, returns true if decoded
   
     // Enum values used for locking access between core 
     // for jpeg buffers 'jpegBuffer0' and 'jpegBuffer1'
@@ -31,7 +32,9 @@ class JPEGStreamer{
         TINYTV_MINI
     };
 
-
+    // Set true when receive 'TYPE' command and set false 
+    // when do not receive jpeg data for timeout time
+    bool live = false;
   private:
     bool fillJpegBufferFromCDC(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferIndex);
     void decode(uint8_t *jpegBuffer, uint16_t &jpegBufferIndex, JPEG_DRAW_CALLBACK *pfnDraw);   // Pass JPEGDec callback function
