@@ -188,13 +188,7 @@ if (!("serial" in navigator)){
         // Handle switching button
         btnConnectTV.classList.add("btn-warning");
         btnConnectTV.innerText = "Disconnect TV and Stop";
-        btnConnectTV.onclick = (event) => {
-            let tracks = videoCapture.srcObject.getTracks();
-            tracks.forEach((track) => track.stop());
-            videoCapture.srcObject = null;
-
-            serial.disconnect();
-        } 
+        btnConnectTV.onclick = serial.disconnect.bind(serial);
 
         collectedData = "";
         
@@ -213,6 +207,11 @@ if (!("serial" in navigator)){
 
         detectedTV = false;
         wroteFrame = true;
+
+        // Stop stream capture
+        let tracks = videoCapture.srcObject.getTracks();
+        tracks.forEach((track) => track.stop());
+        videoCapture.srcObject = null;
 
         showOrHideElement("divDetectingTVType", false);
         showOrHideElement("divStreamingInterface", false);
