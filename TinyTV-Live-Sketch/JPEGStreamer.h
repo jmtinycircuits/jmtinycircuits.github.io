@@ -75,7 +75,7 @@ class JPEGStreamer{
     uint8_t tinyTVType = 0;
 
     uint32_t liveTimeoutStart = 0;
-    uint16_t liveTimeoutLimitms = 250;
+    uint16_t liveTimeoutLimitms = 750;
 };
 
 #endif
