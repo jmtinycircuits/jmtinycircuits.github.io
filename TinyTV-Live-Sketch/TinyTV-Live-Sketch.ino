@@ -85,7 +85,7 @@ void loop1(){
   }else{
     // Not live, do normal video playing stuff
     for(int i=0; i<WIDTH*HEIGHT; i++){
-      screenBuffer[i] = TFT_CYAN;
+      screenBuffer[i] = TFT_BLUE;
     }
   }
 
