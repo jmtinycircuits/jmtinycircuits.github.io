@@ -54,6 +54,7 @@ void setup(){
   cdc.begin(0);
 
   // Initialize TFT
+  while(set_sys_clock_khz(250000, false) == false){};
   tft.begin();
   tft.setRotation(1);
   tft.fillScreen(0);
@@ -62,12 +63,11 @@ void setup(){
   tft.setSwapBytes(true);
   tft.initDMA();
   tft.startWrite();
+  while(set_sys_clock_khz(48000, false) == false){};
 
   // Initialize JPEGDEC
   jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
   jpeg.setMaxOutputSize(2048);
-
-  // while(set_sys_clock_khz(250000, false) == false){};
 }
 
 void setup1(){}
@@ -80,13 +80,15 @@ void loop(){
 
 void loop1(){
   if(streamer.live){
+    while(set_sys_clock_khz(250000, false) == false){};
     streamer.decode(videoBuffer0, videoBuffer1, screenBuffer, draw);
     effects.cropCorners(screenBuffer, WIDTH, HEIGHT);
   }else{
+    while(set_sys_clock_khz(48000, false) == false){};
     // Not live, do normal video playing stuff
-    for(int i=0; i<WIDTH*HEIGHT; i++){
-      screenBuffer[i] = TFT_BLUE;
-    }
+    // for(int i=0; i<WIDTH*HEIGHT; i++){
+    //   screenBuffer[i] = TFT_BLUE;
+    // }
   }
 
   // Display
