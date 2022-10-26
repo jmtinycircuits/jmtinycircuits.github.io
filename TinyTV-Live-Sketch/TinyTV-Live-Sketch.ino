@@ -53,7 +53,7 @@ void setup(){
   Serial.end();
   cdc.begin(0);
 
-  // Initialize TFT
+  // Initialize TFT at max frequency
   while(set_sys_clock_khz(250000, false) == false){};
   tft.begin();
   tft.setRotation(1);
@@ -85,10 +85,11 @@ void loop1(){
     effects.cropCorners(screenBuffer, WIDTH, HEIGHT);
   }else{
     while(set_sys_clock_khz(48000, false) == false){};
+
     // Not live, do normal video playing stuff
-    // for(int i=0; i<WIDTH*HEIGHT; i++){
-    //   screenBuffer[i] = TFT_BLUE;
-    // }
+    for(int i=0; i<WIDTH*HEIGHT; i++){
+      screenBuffer[i] = TFT_BLUE;
+    }
   }
 
   // Display
