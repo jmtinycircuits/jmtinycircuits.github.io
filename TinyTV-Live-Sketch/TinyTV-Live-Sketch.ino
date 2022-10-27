@@ -4,25 +4,7 @@
 
 #include "screenEffects.h"
 #include "JPEGStreamer.h"
-
-// Set to 0 for TinyTV 2 and 1 for TinyTV Mini
-#define TINYTV_MINI_PLATFORM 1
-
-
-// Screen and drawing area parameters
-#if TINYTV_MINI_PLATFORM==1
-  #include <TFT_eSPI_tinytvmini.h>
-  #define VIDEO_X 0
-  #define VIDEO_Y 0
-  #define VIDEO_W 64
-  #define VIDEO_H 64
-#else
-  #include <TFT_eSPI_tinytv2.h>
-  #define VIDEO_X 24
-  #define VIDEO_Y 0
-  #define VIDEO_W 216
-  #define VIDEO_H 135
-#endif
+#include "configuration.h"
 
 
 Adafruit_USBD_CDC cdc;
@@ -30,8 +12,8 @@ TFT_eSPI tft;
 JPEGDEC jpeg;
 
 
-ScreenEffects effects(TINYTV_MINI_PLATFORM);
-JPEGStreamer streamer(&jpeg, &cdc, TINYTV_MINI_PLATFORM);
+ScreenEffects effects(PLATFORM);
+JPEGStreamer streamer(&jpeg, &cdc, PLATFORM);
 
 
 uint16_t screenBuffer[VIDEO_W * VIDEO_H];
@@ -84,7 +66,7 @@ void setup(){
 
   pinMode(9, OUTPUT);
 
-  #if TINYTV_MINI_PLATFORM==1
+  #if PLATFORM==1
     digitalWrite(9, HIGH);
   #else
     digitalWrite(9, LOW);
