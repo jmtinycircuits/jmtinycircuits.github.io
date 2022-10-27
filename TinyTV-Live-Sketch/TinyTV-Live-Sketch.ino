@@ -8,16 +8,15 @@
 #include "screenEffects.h"
 #include "JPEGStreamer.h"
 #include "configuration.h"
-#include "screen.h"
 
 
 Adafruit_USBD_CDC cdc;
+TFT_eSPI tft;
 JPEGDEC jpeg;
 
 
 ScreenEffects effects(PLATFORM);
 JPEGStreamer streamer(&jpeg, &cdc, PLATFORM);
-Screen screen;
 
 
 uint16_t screenBuffer[SCREEN_BUFFER_SIZE];
@@ -52,7 +51,12 @@ void setup(){
   Serial.end();
   cdc.begin(0);
 
-  screen.init(250, 48);
+  tft.begin();
+  tft.setRotation(1);
+  tft.setAddrWindow(VIDEO_X, VIDEO_Y, VIDEO_W, VIDEO_H);
+  tft.setSwapBytes(true);
+  tft.initDMA();
+  tft.startWrite();
 
   // Initialize JPEGDEC
   jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
@@ -76,11 +80,11 @@ void loop(){
 
 void loop1(){
   if(streamer.live){
-    set_sys_clock_khz(250000, false);
+    // set_sys_clock_khz(250000, false);
     streamer.decode(videoBuffer0, videoBuffer1, screenBuffer, draw);
     effects.cropCorners(screenBuffer, VIDEO_W, VIDEO_H);
   }else{
-    set_sys_clock_khz(48000, false);
+    // set_sys_clock_khz(48000, false);
 
     // Not live, do normal video playing stuff
     for(int i=0; i<SCREEN_BUFFER_SIZE; i++){
@@ -89,5 +93,5 @@ void loop1(){
   }
 
   // Display
-  screen.update(screenBuffer, SCREEN_BUFFER_SIZE);
+  tft.pushPixelsDMA(screenBuffer, VIDEO_W * VIDEO_H);
 }
