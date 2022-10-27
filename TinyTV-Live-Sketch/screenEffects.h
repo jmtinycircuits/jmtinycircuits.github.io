@@ -30,7 +30,7 @@ class ScreenEffects : public RoundCornerEffect{
     ScreenEffects(uint8_t tinyTVType);
 
     enum TINYTV_TYPE{
-      TINYTV_2,
+      TINYTV_2=0,
       TINYTV_MINI
     };
 

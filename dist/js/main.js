@@ -97,6 +97,7 @@ if (!("serial" in navigator)){
     let t0 = 0;
     let sentCount = 0;
     let ct0 = 0;
+    let jpegQuality = 0.8;
 
     // Very important to not write frames while other frames are being written! One frame at a time (otherwise get could nto open error 4 in firmware)
     let wroteFrame = true;
@@ -117,7 +118,7 @@ if (!("serial" in navigator)){
 
             if(wroteFrame == true){
                 wroteFrame = false;
-                offscreenCanvasOutput.convertToBlob({type: "image/jpeg", quality: 0.8}).then((blob) => {
+                offscreenCanvasOutput.convertToBlob({type: "image/jpeg", quality: jpegQuality}).then((blob) => {
                     frameLength = blob.size;
 
                     spanFrameLength.innerText = "Frame length: " + frameLength;
@@ -224,10 +225,12 @@ if (!("serial" in navigator)){
                 onDetection("TinyTV 2");
                 canvasOutput.width = offscreenCanvasOutput.width = 216;
                 canvasOutput.height = offscreenCanvasOutput.height = 135;
+                jpegQuality = 0.8;
             }else if(collectedData.indexOf("TVMINI") != -1){
                 onDetection("TinyTV Mini");
                 canvasOutput.width = offscreenCanvasOutput.width = 64;
                 canvasOutput.height = offscreenCanvasOutput.height = 64;
+                jpegQuality = 0.92;
             }
         }
     }
