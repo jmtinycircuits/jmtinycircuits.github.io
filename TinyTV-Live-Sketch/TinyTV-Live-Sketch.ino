@@ -1,3 +1,6 @@
+// COMPILE NOTE: change platform in configuration.h to switch between TinyTV 2 and Mini
+// Make sure to set 'CFG_TUD_CDC' to 2 in C:\Users\TinyCircuits\AppData\Local\Arduino15\packages\rp2040\hardware\rp2040\2.6.0\libraries\Adafruit_TinyUSB_Arduino\src\arduino\ports\rp2040\tusb_config_rp2040.h
+
 #include <JPEGDEC.h>
 #include <Adafruit_TinyUSB.h>
 #include "pico/stdlib.h"
@@ -5,18 +8,19 @@
 #include "screenEffects.h"
 #include "JPEGStreamer.h"
 #include "configuration.h"
+#include "screen.h"
 
 
 Adafruit_USBD_CDC cdc;
-TFT_eSPI tft;
 JPEGDEC jpeg;
 
 
 ScreenEffects effects(PLATFORM);
 JPEGStreamer streamer(&jpeg, &cdc, PLATFORM);
+Screen screen;
 
 
-uint16_t screenBuffer[VIDEO_W * VIDEO_H];
+uint16_t screenBuffer[SCREEN_BUFFER_SIZE];
 uint8_t videoBuffer0[20000];
 uint8_t videoBuffer1[20000];
 
@@ -48,24 +52,13 @@ void setup(){
   Serial.end();
   cdc.begin(0);
 
-  // Initialize TFT at max frequency
-  // while(set_sys_clock_khz(250000, false) == false){};
-  tft.begin();
-  tft.setRotation(1);
-  tft.fillScreen(0);
-  tft.setAddrWindow(VIDEO_X, VIDEO_Y, VIDEO_W, VIDEO_H);
-  tft.pushColor(TFT_BLACK, VIDEO_W * VIDEO_H);
-  tft.setSwapBytes(true);
-  tft.initDMA();
-  tft.startWrite();
-  // while(set_sys_clock_khz(48000, false) == false){};
+  screen.init(250, 48);
 
   // Initialize JPEGDEC
   jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
   jpeg.setMaxOutputSize(2048);
 
   pinMode(9, OUTPUT);
-
   #if PLATFORM==1
     digitalWrite(9, HIGH);
   #else
@@ -83,11 +76,11 @@ void loop(){
 
 void loop1(){
   if(streamer.live){
-    // while(set_sys_clock_khz(250000, false) == false){};
+    set_sys_clock_khz(250000, false);
     streamer.decode(videoBuffer0, videoBuffer1, screenBuffer, draw);
     effects.cropCorners(screenBuffer, VIDEO_W, VIDEO_H);
   }else{
-    // while(set_sys_clock_khz(48000, false) == false){};
+    set_sys_clock_khz(48000, false);
 
     // Not live, do normal video playing stuff
     for(int i=0; i<VIDEO_W*VIDEO_H; i++){
@@ -96,6 +89,5 @@ void loop1(){
   }
 
   // Display
-  tft.dmaWait();
-  tft.pushPixelsDMA(screenBuffer, VIDEO_W * VIDEO_H);
+  screen.update(screenBuffer, SCREEN_BUFFER_SIZE);
 }

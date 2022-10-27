@@ -14,6 +14,14 @@
         "xstring": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
-        "istream": "cpp"
+        "istream": "cpp",
+        "array": "cpp",
+        "chrono": "cpp",
+        "deque": "cpp",
+        "format": "cpp",
+        "forward_list": "cpp",
+        "ranges": "cpp",
+        "regex": "cpp",
+        "span": "cpp"
     }
 }

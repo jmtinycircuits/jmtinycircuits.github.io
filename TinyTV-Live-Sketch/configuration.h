@@ -3,7 +3,6 @@
 #define TINYTV_MINI_PLATFORM 1
 #define PLATFORM TINYTV_2_PLATFORM
 
-
 // Screen and drawing area parameters
 #if PLATFORM==1
   #include <TFT_eSPI_tinytvmini.h>
@@ -18,3 +17,5 @@
   #define VIDEO_W 216
   #define VIDEO_H 135
 #endif
+
+#define SCREEN_BUFFER_SIZE VIDEO_W*VIDEO_H
