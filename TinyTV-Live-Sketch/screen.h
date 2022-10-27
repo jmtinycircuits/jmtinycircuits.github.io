@@ -9,7 +9,7 @@ class Screen{
   public:
     Screen(){}
 
-    void init(uint8_t MHz0, uint8_t MHz1);
+    void init(uint32_t MHz0, uint32_t MHz1);
 
     // Update the screen under either of the two frequencies passed in the constructor.
     // Returns false if the current frequency is not one of the constructor values

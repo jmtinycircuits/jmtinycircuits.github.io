@@ -83,7 +83,7 @@ void loop1(){
     set_sys_clock_khz(48000, false);
 
     // Not live, do normal video playing stuff
-    for(int i=0; i<VIDEO_W*VIDEO_H; i++){
+    for(int i=0; i<SCREEN_BUFFER_SIZE; i++){
       screenBuffer[i] = TFT_BLUE;
     }
   }
