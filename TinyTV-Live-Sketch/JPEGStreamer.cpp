@@ -58,10 +58,11 @@ void JPEGStreamer::stopBufferFilling(){
 
 uint8_t JPEGStreamer::commandCheck(){
   // Check to see if the frame deliminator is found, or if a command should be responded to
-  if(commandBuffer[0] == 'F' && commandBuffer[1] == 'R' && commandBuffer[2] == 'A' && commandBuffer[3] == 'M' && commandBuffer[4] == 'E'){
+
+  if(strstr(commandBuffer, "FRAME")){
     frameDeliminatorAcquired = true;
     return COMMAND_TYPE::FRAME_DELIMINATOR;
-  }else if(commandBuffer[0] == 'T' && commandBuffer[1] == 'Y' && commandBuffer[2] == 'P' && commandBuffer[3] == 'E'){
+  }else if(strstr(commandBuffer, "TYPE")){
     if(tinyTVType == TINYTV_TYPE::TINYTV_2){
       cdc->print("TV2");
     }else if(tinyTVType == TINYTV_TYPE::TINYTV_MINI){

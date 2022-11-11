@@ -67,14 +67,6 @@ let ctx = canvasOutput.getContext("2d");
 let detectedTV = false;
 
 
-const targetFrameLength = 9000;
-const targetFrameLengthMargin = 1000;
-const targetFrameLengthMin = targetFrameLength-targetFrameLengthMargin;
-const targetFrameLengthMax = targetFrameLength+targetFrameLengthMargin;
-let jpegQuality = 0.6;
-let jpegQualityStep = 0.1;
-
-
 // Check if WebSerial is supported in this browser
 if (!("serial" in navigator)){
     // The Web Serial API is not supported! Disable connect button and show error alert
@@ -143,8 +135,6 @@ if (!("serial" in navigator)){
                             await serial.write("FRAME", true);
                             await serial.write(new Uint8Array([(frameLength >> 8) & 0b11111111, frameLength & 0b11111111]), false);
                             await serial.write(new Uint8Array(buffer), false);
-                            console.log("");
-                            console.log(new Uint8Array(buffer));
                             wroteFrame = true;
                         });
                     }else{

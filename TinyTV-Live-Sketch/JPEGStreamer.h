@@ -63,7 +63,7 @@ class JPEGStreamer{
     uint16_t jpegBuffer1ReadCount = 0;
 
     // Used for storing incoming data for checking for commands (e.g. 'TYPE') or deliminator (e.g. 'FRAME')
-    uint8_t commandBuffer[5];
+    char commandBuffer[5];
 
     // The frame size as received after deliminator
     uint16_t frameSize = 0;
@@ -72,6 +72,7 @@ class JPEGStreamer{
     // to fill buffers. False means to look for commands or deliminator
     bool frameDeliminatorAcquired = false;
 
+    // Passed in constructor, type of TV to respond with
     uint8_t tinyTVType = 0;
 
     uint32_t liveTimeoutStart = 0;
