@@ -170,6 +170,12 @@ void JPEGStreamer::decode(uint8_t *jpegBuffer, uint16_t &jpegBufferReadCount, JP
   }
   jpeg->decode(0, 0, 0);
 
+  uint32_t dt = millis() - t0;
+  if(dt > 0){
+    cdc->print((uint16_t)(1.0f / ((dt)/1000.0f)));
+    t0 = millis();
+  }
+
   // Reset now that the frame is decoded
   jpegBufferReadCount = 0;
 }

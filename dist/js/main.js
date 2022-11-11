@@ -53,8 +53,10 @@ let decoder = new TextDecoder();
 let btnConnectTV = document.getElementById("btnConnectTV");
 let videoCapture = document.getElementById("videoCapture");
 
-let spanJPEGQuality = document.getElementById("spanJPEGQuality");
 let spanFrameLength = document.getElementById("spanFrameLength");
+let spanTrySendFPS = document.getElementById("spanTrySendFPS");
+let spanSendFPS = document.getElementById("spanSendFPS");
+let spanCaptureFPS = document.getElementById("spanCaptureFPS");
 
 let cropSelect = document.getElementById("cropSelect");
 
@@ -102,20 +104,26 @@ if (!("serial" in navigator)){
 
 
 
-    let t0 = 0;
-    let ct0 = 0;
+    let try_send_t0 = 0;
+    let send_t0 = 0;
+    let capture_t0 = 0;
+
     let jpegQuality = 0.8;
 
     // Very important to not write frames while other frames are being written! One frame at a time (otherwise get could nto open error 4 in firmware)
     let wroteFrame = true;
 
     let processFrame = (now, metadata) => {
-        
-        ct0 = performance.now();
-        let dt = (performance.now() - t0) / 1000;
+        videoCapture.requestVideoFrameCallback(processFrame);
 
-        if(dt >= (1/parseInt(24))){
-            t0 = performance.now();
+        let try_send_dt = (performance.now() - try_send_t0) / 1000;
+        let capture_dt = (performance.now() - capture_t0) / 1000;
+        spanGrabFPS.innerText = "Capture FPS: " + (1/capture_dt).toFixed(0);
+        capture_t0 = performance.now();
+
+        if(try_send_dt >= (1/parseInt(24))){
+            spanTrySendFPS.innerText = "Try Send FPS: " + (1/try_send_dt).toFixed(0);
+            try_send_t0 = performance.now();
 
             // Draw frame to canvas and scale
             offscreenCtx.drawImage(videoCapture, 0, 0, canvasOutput.width, canvasOutput.height);
@@ -136,6 +144,9 @@ if (!("serial" in navigator)){
                             await serial.write(new Uint8Array([(frameLength >> 8) & 0b11111111, frameLength & 0b11111111]), false);
                             await serial.write(new Uint8Array(buffer), false);
                             wroteFrame = true;
+
+                            spanSendFPS.innerText = "Send FPS: " + (1/((performance.now() - send_t0)/1000)).toFixed(0);
+                            send_t0 = performance.now();
                         });
                     }else{
                         wroteFrame = true;
@@ -148,10 +159,9 @@ if (!("serial" in navigator)){
                 });
             }
         }
-
-        videoCapture.requestVideoFrameCallback(processFrame);
     }
-
+    // Only call this once outside of process function (otherwise will get overlapping calls)
+    videoCapture.requestVideoFrameCallback(processFrame);
 
 
     let onDetection = async (type) => {
@@ -164,9 +174,12 @@ if (!("serial" in navigator)){
 
             let captureStream = null;
 
+            // https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/frameRate
+            // https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints
             const displayMediaOptions = {
                 video: {
-                    cursor: "always"
+                    cursor: "always",
+                    frameRate: 60
                 },
                 audio: false
             };
@@ -177,7 +190,6 @@ if (!("serial" in navigator)){
                 showOrHideElement("divStreamingInterface", true);
 
                 videoCapture.srcObject = captureStream;
-                videoCapture.requestVideoFrameCallback(processFrame);
             } catch (err) {
                 showOrHideElement("divStreamingInterface", false);
 

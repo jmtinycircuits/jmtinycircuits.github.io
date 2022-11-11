@@ -77,6 +77,8 @@ class JPEGStreamer{
 
     uint32_t liveTimeoutStart = 0;
     uint16_t liveTimeoutLimitms = 750;
+
+    uint32_t t0 = 0;
 };
 
 #endif
