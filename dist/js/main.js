@@ -56,6 +56,8 @@ let videoCapture = document.getElementById("videoCapture");
 let spanJPEGQuality = document.getElementById("spanJPEGQuality");
 let spanFrameLength = document.getElementById("spanFrameLength");
 
+let cropSelect = document.getElementById("cropSelect");
+
 let offscreenCanvasOutput = new OffscreenCanvas(216, 135);
 let offscreenCtx = offscreenCanvasOutput.getContext("2d");
 
@@ -80,6 +82,20 @@ if (!("serial" in navigator)){
     btnConnectTV.disabled = true;
     showOrHideElement("errorAlert", true)
 }else{
+    let fitVideo = (value) => {
+        if(value.indexOf("Contain") != -1){
+            
+        }else if(value.indexOf("Cover") != -1){
+
+        }else if(value.indexOf("Fill") != -1){
+
+        }
+    }
+
+    cropSelect.oninput = (event) => {
+        fitVideo(cropSelect.value);
+    }
+
     let timeout = undefined;;
     let askType = () => {
         if(detectedTV == false){
@@ -95,7 +111,6 @@ if (!("serial" in navigator)){
 
 
     let t0 = 0;
-    let sentCount = 0;
     let ct0 = 0;
     let jpegQuality = 0.8;
 
@@ -106,9 +121,8 @@ if (!("serial" in navigator)){
         
         ct0 = performance.now();
         let dt = (performance.now() - t0) / 1000;
-        let fps = 1.0 / dt;
 
-        if(fps <= parseInt(30)){
+        if(dt >= (1/parseInt(24))){
             t0 = performance.now();
 
             // Draw frame to canvas and scale
@@ -129,6 +143,8 @@ if (!("serial" in navigator)){
                             await serial.write("FRAME", true);
                             await serial.write(new Uint8Array([(frameLength >> 8) & 0b11111111, frameLength & 0b11111111]), false);
                             await serial.write(new Uint8Array(buffer), false);
+                            console.log("");
+                            console.log(new Uint8Array(buffer));
                             wroteFrame = true;
                         });
                     }else{

@@ -47,23 +47,32 @@ int draw(JPEGDRAW* block){
 }
 
 
-void setup(){
+void setup(){ 
+  // Set system core frequency depending on platform
+  #if PLATFORM==TINYTV_MINI_PLATFORM
+    #pragma message ( "Arduino frequency overridden, set to 50MHz for TinyTV Mini" )
+    set_sys_clock_khz(50000, false);
+  #else
+    #pragma message ( "Arduino frequency overridden, set to 200MHz for TinyTV 2" )
+    set_sys_clock_khz(200000, false);
+  #endif
+
   Serial.end();
   cdc.begin(0);
 
   tft.begin();
   tft.setRotation(1);
+  tft.fillScreen(0);  // Fill entire screen to black to overwrite all potentially unmodified pixels
   tft.setAddrWindow(VIDEO_X, VIDEO_Y, VIDEO_W, VIDEO_H);
   tft.setSwapBytes(true);
   tft.initDMA();
   tft.startWrite();
 
-  // Initialize JPEGDEC
   jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
   jpeg.setMaxOutputSize(2048);
 
   pinMode(9, OUTPUT);
-  #if PLATFORM==1
+  #if PLATFORM==TINYTV_MINI_PLATFORM
     digitalWrite(9, HIGH);
   #else
     digitalWrite(9, LOW);
@@ -80,12 +89,9 @@ void loop(){
 
 void loop1(){
   if(streamer.live){
-    // set_sys_clock_khz(250000, false);
     streamer.decode(videoBuffer0, videoBuffer1, screenBuffer, draw);
     effects.cropCorners(screenBuffer, VIDEO_W, VIDEO_H);
   }else{
-    // set_sys_clock_khz(48000, false);
-
     // Not live, do normal video playing stuff
     for(int i=0; i<SCREEN_BUFFER_SIZE; i++){
       screenBuffer[i] = TFT_BLUE;

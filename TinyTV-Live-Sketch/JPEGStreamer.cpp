@@ -85,7 +85,7 @@ void JPEGStreamer::commandSearch(){
     // Store the just read from serial byte in cmd buffer
     commandBuffer[4] = cdc->read();
 
-    // Check this after the bytes have been shifted, otherwise, will keep reading the same buffer
+    // Check this after the bytes have been shifted, otherwise, will keep reading the same buffer (only ends on deliminator, but responds to TYPE)
     if(commandCheck() == COMMAND_TYPE::FRAME_DELIMINATOR){
       break;
     }
