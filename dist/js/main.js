@@ -125,12 +125,12 @@ if (!("serial" in navigator)){
             spanTrySendFPS.innerText = "Try Send FPS: " + (1/try_send_dt).toFixed(0);
             try_send_t0 = performance.now();
 
-            // Draw frame to canvas and scale
-            offscreenCtx.drawImage(videoCapture, 0, 0, canvasOutput.width, canvasOutput.height);
-
             let frameLength = 0;
 
             if(wroteFrame == true){
+                // Draw frame to canvas and scale
+                offscreenCtx.drawImage(videoCapture, 0, 0, canvasOutput.width, canvasOutput.height);
+
                 wroteFrame = false;
                 offscreenCanvasOutput.convertToBlob({type: "image/jpeg", quality: jpegQuality}).then((blob) => {
                     frameLength = blob.size;

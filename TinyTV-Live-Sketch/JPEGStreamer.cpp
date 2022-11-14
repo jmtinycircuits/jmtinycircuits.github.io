@@ -57,12 +57,11 @@ void JPEGStreamer::stopBufferFilling(){
 
 
 uint8_t JPEGStreamer::commandCheck(uint8_t *jpegBuffer){
-  // Check to see if the frame deliminator is found, or if a command should be responded to
-
-  // FF D8 FF E0 is the start of a jpeg image
+// "FF D8 FF E0" is the start of a jpeg image
   if(jpegBuffer[2] == 0xFF && jpegBuffer[3] == 0xD8 && jpegBuffer[4] == 0xFF && jpegBuffer[5] == 0xE0){
     frameDeliminatorAcquired = true;
     return COMMAND_TYPE::FRAME_DELIMINATOR;
+    
   }else if(jpegBuffer[2] == 'T' && jpegBuffer[3] == 'Y' && jpegBuffer[4] == 'P' && jpegBuffer[5] == 'E'){
     if(tinyTVType == TINYTV_TYPE::TINYTV_2){
       cdc->print("TV2");
@@ -84,11 +83,8 @@ void JPEGStreamer::commandSearch(uint8_t *jpegBuffer){
     jpegBuffer[2] = jpegBuffer[3];
     jpegBuffer[3] = jpegBuffer[4];
     jpegBuffer[4] = jpegBuffer[5];
-
-    // Store the just read from serial byte in buffer
     jpegBuffer[5] = cdc->read();
 
-    // Check this after the bytes have been shifted, otherwise, will keep reading the same buffer (only ends on deliminator, but responds to TYPE)
     if(commandCheck(jpegBuffer) == COMMAND_TYPE::FRAME_DELIMINATOR){
       break;
     }
@@ -96,7 +92,7 @@ void JPEGStreamer::commandSearch(uint8_t *jpegBuffer){
 }
 
 
-bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount, uint16_t available){
+bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount){
   // Figure out the frame size and go back to deliminator searching if out of bounds
   if(frameSize == 0){
     frameSize = (((uint16_t)jpegBuffer[0]) << 8) | ((uint16_t)jpegBuffer[1]);
@@ -119,6 +115,7 @@ bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize
       jpegBufferReadCount += cdc->read((jpegBuffer+2) + jpegBufferReadCount, bytesToReadCount);
     }else{
       // Not going to get reset by decode so do it here so it doesn't get stuck out of bounds forever
+      // (reset to 4 since deliminator searcher will find the first 4 jpeg bytes)
       jpegBufferReadCount = 4;
 
       stopBufferFilling();
@@ -140,7 +137,7 @@ bool JPEGStreamer::incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBu
 
     if(frameDeliminatorAcquired){
       live = true;
-      return fillBuffer(jpegBuffer, jpegBufferSize, jpegBufferReadCount, available);
+      return fillBuffer(jpegBuffer, jpegBufferSize, jpegBufferReadCount);
     }else{
       // Search for deliminator to get back to filling buffers or respond to commands
       commandSearch(jpegBuffer);
@@ -152,6 +149,7 @@ bool JPEGStreamer::incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBu
 
     // Wait for decoding to finish and then reset incoming jpeg data read counts (otherwise may start at something other than zero next time)
     while(jpegBuffer0Semaphore != JPEG_BUFFER_SEMAPHORE::UNLOCKED && jpegBuffer1Semaphore != JPEG_BUFFER_SEMAPHORE::UNLOCKED){}
+    // (reset to 4 since deliminator searcher will find the first 4 jpeg bytes)
     jpegBuffer0ReadCount = 4;
     jpegBuffer1ReadCount = 4;
   }
@@ -162,7 +160,7 @@ bool JPEGStreamer::incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBu
 
 
 void JPEGStreamer::decode(uint8_t *jpegBuffer, uint16_t &jpegBufferReadCount, JPEG_DRAW_CALLBACK *pfnDraw){
-  // Open and decode
+  // Open and decode (start 2 bytes from start since those are the frame size bytes)
   if (!jpeg->openRAM(jpegBuffer+2, jpegBufferReadCount, pfnDraw)){
     cdc->print("Could not open frame from RAM! Error: ");
     cdc->println(jpeg->getLastError());
@@ -173,9 +171,10 @@ void JPEGStreamer::decode(uint8_t *jpegBuffer, uint16_t &jpegBufferReadCount, JP
   uint32_t dt = millis() - t0;
   if(dt > 0){
     cdc->print((uint16_t)(1.0f / ((millis() - t0)/1000.0f)));
+    cdc->println(" FPS");
     t0 = millis();
   }
 
-  // Reset now that the frame is decoded
+  // Reset now that the frame is decoded (reset to 4 since deliminator searcher will find the first 4 jpeg bytes)
   jpegBufferReadCount = 4;
 }

@@ -46,7 +46,7 @@ class JPEGStreamer{
     uint8_t commandCheck(uint8_t *jpegBuffer);
     void commandSearch(uint8_t *jpegBuffer);
     void noDataTimeoutHandler();
-    bool fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount, uint16_t available);
+    bool fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount);
     bool incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount);
 
     void decode(uint8_t *jpegBuffer, uint16_t &jpegBufferReadCount, JPEG_DRAW_CALLBACK *pfnDraw);   // Pass JPEGDec callback function
