@@ -140,7 +140,6 @@ if (!("serial" in navigator)){
                     // Handle sending frames. If no serial connected, set the frame as written (gets rid of bug where you can only start streaming once)
                     if(serial.connected){
                         blob.arrayBuffer().then(async (buffer) => {
-                            await serial.write("FRAME", true);
                             await serial.write(new Uint8Array([(frameLength >> 8) & 0b11111111, frameLength & 0b11111111]), false);
                             await serial.write(new Uint8Array(buffer), false);
                             wroteFrame = true;

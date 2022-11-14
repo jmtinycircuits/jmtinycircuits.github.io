@@ -43,8 +43,8 @@ class JPEGStreamer{
     bool live = false;
   private:
     void stopBufferFilling();
-    uint8_t commandCheck();
-    void commandSearch();
+    uint8_t commandCheck(uint8_t *jpegBuffer);
+    void commandSearch(uint8_t *jpegBuffer);
     void noDataTimeoutHandler();
     bool fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount, uint16_t available);
     bool incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount);
@@ -61,9 +61,6 @@ class JPEGStreamer{
     // Used in 'core0FillBuffers(...)'
     uint16_t jpegBuffer0ReadCount = 0;
     uint16_t jpegBuffer1ReadCount = 0;
-
-    // Used for storing incoming data for checking for commands (e.g. 'TYPE') or deliminator (e.g. 'FRAME')
-    char commandBuffer[5];
 
     // The frame size as received after deliminator
     uint16_t frameSize = 0;

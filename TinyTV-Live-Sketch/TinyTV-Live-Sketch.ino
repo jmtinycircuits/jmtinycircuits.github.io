@@ -47,7 +47,7 @@ int draw(JPEGDRAW* block){
 }
 
 
-void setup(){ 
+void setup(){
   // Set system core frequency depending on platform
   #if PLATFORM==TINYTV_MINI_PLATFORM
     #pragma message ( "Arduino frequency overridden, set to 50MHz for TinyTV Mini" )
