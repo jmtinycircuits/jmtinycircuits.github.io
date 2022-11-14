@@ -1,0 +1,45 @@
+<!doctype html>
+
+<html data-theme="night">
+    <head>
+        <title>Speed test</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="/dist/tailwind_output.css" rel="stylesheet">
+    </head>
+
+    <body>
+        <div class="flex flex-col">
+            <div class="ml-4 mb-4 text-lg">Speed test</div>
+            
+            <div class="form-control">
+                <label class="input-group">
+                  <span>Data size (kB)</span>
+                  <input id="inputPayloadSize" type="number" value="1" class="input input-bordered" />
+                </label>
+            </div>
+
+            <button id="btnConnect" class="btn btn-primary w-32 mt-4">Connect</button>
+
+            <div class="ml-4 mt-16 text-lg">JPEG image size test (not sent)</div>
+            <button id="btnPickScreen" class="btn btn-primary w-32 mt-4">Pick screen</button>
+            <label class="input-group">
+                <span>Width (px)</span>
+                <input id="inputWidth" type="number" value="320" class="input input-bordered" />
+            </label>
+            <label class="input-group">
+                <span>Height (px)</span>
+                <input id="inputHeight" type="number" value="240" class="input input-bordered" />
+            </label>
+            <label class="input-group">
+                <span>Jpeg Quality (0.0 ~ 1.0)</span>
+                <input id="inputJpegQuality" type="number" value="0.92" step=0.01 class="input input-bordered" />
+            </label>
+            <canvas id="canvasOutput" width=320 height=240 class="w-1/4 h-auto" style="image-rendering: pixelated;"></canvas>
+
+            <video id="videoCapture" class="absolute invisible w-1/4 h-auto" autoplay></video>
+        </div>
+
+        <script type="module" src="/dist/js/speedtest.js"></script>
+    </body>
+</html>

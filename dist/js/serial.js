@@ -82,7 +82,7 @@ class Serial{
             this.connected = false;
             this.onDisconnect();
 
-            console.log("Disconnection of a serial device");
+            console.log("Serial device disconnected");
         }
     }
 
@@ -91,7 +91,7 @@ class Serial{
         console.log(90, "Opening port...");
 
         try{
-            await port.open({ baudRate: 115200 });
+            await port.open({ baudRate: 2000000, bufferSize: 2048 });
             this.port = port;
 
             this.connected = true;
