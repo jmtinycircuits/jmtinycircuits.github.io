@@ -76,13 +76,44 @@ if (!("serial" in navigator)){
     btnConnectTV.disabled = true;
     showOrHideElement("errorAlert", true)
 }else{
+    let drawVideoX = 0;
+    let drawVideoY = 0;
+    let drawVideoW = 240;
+    let drawVideoH = 135;
+
     let fitVideo = (value) => {
         if(value.indexOf("Contain") != -1){
-            
+            console.log("Contain", videoCapture.videoWidth, videoCapture.videoHeight);
+            if(videoCapture.videoWidth > videoCapture.videoHeight){
+                drawVideoW = 216;
+                drawVideoH = videoCapture.videoHeight * (216 / videoCapture.videoWidth);
+                drawVideoX = 0;
+                drawVideoY = (135/2) - (drawVideoH/2);
+            }else{
+                drawVideoH = 135;
+                drawVideoW = videoCapture.videoWidth * (135 / videoCapture.videoHeight);
+                drawVideoX = (216/2) - (drawVideoW/2);
+                drawVideoY = 0;
+            }
         }else if(value.indexOf("Cover") != -1){
-
+            console.log("Cover", videoCapture.videoWidth, videoCapture.videoHeight);
+            if(videoCapture.videoWidth < videoCapture.videoHeight){
+                drawVideoW = 216;
+                drawVideoH = videoCapture.videoHeight * (216 / videoCapture.videoWidth);
+                drawVideoX = 0;
+                drawVideoY = (135/2) - (drawVideoH/2);
+            }else{
+                drawVideoH = 135;
+                drawVideoW = videoCapture.videoWidth * (135 / videoCapture.videoHeight);
+                drawVideoX = (216/2) - (drawVideoW/2);
+                drawVideoY = 0;
+            }
         }else if(value.indexOf("Fill") != -1){
-
+            console.log("Fill", videoCapture.videoWidth, videoCapture.videoHeight);
+            drawVideoW = 216;
+            drawVideoH = 135;
+            drawVideoX = 0;
+            drawVideoY = 0;
         }
     }
 
@@ -128,8 +159,13 @@ if (!("serial" in navigator)){
             let frameLength = 0;
 
             if(wroteFrame == true){
+                offscreenCtx.beginPath();
+                offscreenCtx.rect(0, 0, 240, 135);
+                offscreenCtx.fillStyle = "black";
+                offscreenCtx.fill();
+
                 // Draw frame to canvas and scale
-                offscreenCtx.drawImage(videoCapture, 0, 0, canvasOutput.width, canvasOutput.height);
+                offscreenCtx.drawImage(videoCapture, drawVideoX, drawVideoY, drawVideoW, drawVideoH);
 
                 wroteFrame = false;
                 offscreenCanvasOutput.convertToBlob({type: "image/jpeg", quality: jpegQuality}).then((blob) => {
@@ -185,13 +221,10 @@ if (!("serial" in navigator)){
 
             try {
                 captureStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
-
                 showOrHideElement("divStreamingInterface", true);
-
                 videoCapture.srcObject = captureStream;
             } catch (err) {
                 showOrHideElement("divStreamingInterface", false);
-
                 serial.disconnect();
                 console.error(`Error: ${err}`);
             }
