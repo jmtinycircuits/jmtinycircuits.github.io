@@ -1,6 +1,7 @@
 import { Serial } from "./serial.js";
 
 
+// Wrapper around showing and hiding elements
 async function showOrHideElement(elementID, show=true){
     return new Promise((resolve, reject) => {
         let element = document.getElementById(elementID);
@@ -23,7 +24,7 @@ async function showOrHideElement(elementID, show=true){
 }
 
 
-
+// Show pop-up saying a TV was detected
 async function showAlertPopup(elementID, alertText){
     return new Promise((resolve, reject) => {
         let element = document.getElementById(elementID);

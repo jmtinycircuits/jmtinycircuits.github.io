@@ -1,5 +1,6 @@
 // COMPILE NOTE: change platform in configuration.h to switch between TinyTV 2 and Mini
 // Make sure to set 'CFG_TUD_CDC' to 2 in C:\Users\TinyCircuits\AppData\Local\Arduino15\packages\rp2040\hardware\rp2040\2.6.0\libraries\Adafruit_TinyUSB_Arduino\src\arduino\ports\rp2040\tusb_config_rp2040.h
+// Also make sure to CFG_TUD_CDC_RX_BUFSIZE and CFG_TUD_CDC_TX_BUFSIZE to 2048 instead of default 512 to speed up transfer
 
 #include <JPEGDEC.h>
 #include <Adafruit_TinyUSB.h>
