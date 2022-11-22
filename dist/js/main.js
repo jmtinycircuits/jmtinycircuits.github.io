@@ -78,7 +78,7 @@ if (!("serial" in navigator)){
 }else{
     let drawVideoX = 0;
     let drawVideoY = 0;
-    let drawVideoW = 240;
+    let drawVideoW = 216;
     let drawVideoH = 135;
 
     let fitVideo = (value) => {
