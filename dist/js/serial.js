@@ -82,13 +82,13 @@ class Serial{
             this.connected = false;
             this.onDisconnect();
 
-            console.log("Serial device disconnected");
+            console.log("Serial disconnected!");
         }
     }
 
 
     async #connect(port){
-        console.log(90, "Opening port...");
+        console.log("Opening port...");
 
         try{
             await port.open({ baudRate: 2000000, bufferSize: 2048 });
@@ -104,14 +104,14 @@ class Serial{
             // Call the connected callback for external modules
             await this.onConnect();
 
-            console.log("Connected!", 100);
+            console.log("Serial connected!");
         }catch(error){
             if(error.name == "InvalidStateError"){
                 console.error("Port already open...");
-                console.log(0, "Port already open...");
+                console.log("Port already open...");
             }else if(error.name == "NetworkError"){
                 console.error("Failed to open port, is something using it?");
-                console.log(0, "Failed to open port, is something using it?");
+                console.log("Failed to open port, is something using it?");
             }else{
                 console.error(error);
             }
@@ -121,7 +121,7 @@ class Serial{
 
     async attemptAutoConnect(){
         if(this.manuallyConnecting == false){
-            console.log(25, "Attempting auto connect...");
+            console.log("Attempting auto connect...");
             // Get ports this page knows about
             let ports = await navigator.serial.getPorts();
 
@@ -145,12 +145,12 @@ class Serial{
         if(await this.attemptAutoConnect() == false){
             this.manuallyConnecting = true;
             try{
-                console.log(50, "Waiting on device selection...");
+                console.log("Waiting on device selection...");
                 let port = await navigator.serial.requestPort({filters: this.vendorProductIDs});
                 await this.#connect(port);
             }catch(error){
                 // User did not select anything and closed browser dialog
-                console.log(0, "No device selected for connection...");
+                console.log("No device selected for connection...");
             }
             this.manuallyConnecting = false;
         }
