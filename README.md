@@ -12,6 +12,11 @@
 2. Execute `npm run watch` in root to run server at `https://127.0.0.1/`. Each time a file that is marked as tracked in `tailwind.config.js` is saved, the website will automatically update but you'll need to refresh it. The tracked files are for Tailwind CSS and daisyUI. If a JS/CSS/HTML file uses Tailwind CSS or daisyUI classes, make sure they are tracked in `tailwind.config.js` otherwise you'll get bugs where elements do not have the correct formatting or disappear because the position formatting was lost.
 3. Should be able to run `npm run build` to build the site without watching, see `package.json` for commands/scripts
 
+## Build process
+`package.json` contains a command `build` under `scripts` that is run when the `npm run watch` command detects a change. When that build command runs it builds the Tailwind CSS output in `dist`, based on the input file, and runs a gulpfile that will move any html files, like `src/html/index.html`, to `dist` (should only be one file `index.html` but it will move more). Then the JavaScript files under `src/js` are webpacked and combined into a file `dist/main.js.`
+
+Now, all the `dist` folder will contain is hopefully three files `index.html`, `main.js`, and 'tailwind_output.css,' but these need combined into a single html file for Shopify. The specific file `dist_index_find_and_replace.py` is finally run which will look for specific lines like `<script type="module" src="/src/js/main.js"></script>` and then replace the line with linked file contents in the `dist_index_find_and_replace.py` script.
+
 # Setup from scratch (for reference if needed)
 1. `mkdir TinyCircuits-Web-Programming-Platform`
 2. `cd TinyCircuits-Web-Programming-Platform`

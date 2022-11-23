@@ -203,7 +203,7 @@ class JPEGStreamer{
         this.fitFrameX = (screenW/2) - (this.fitFrameW/2);
         this.fitFrameY = 0;
     }
-
+    
 
     #fitContain(screenW, screenH, videoW, videoH){
         if(videoW > videoH){

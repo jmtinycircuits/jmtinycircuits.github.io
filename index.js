@@ -19,13 +19,5 @@ https.createServer(options, app).listen(443);
 
 
 app.get('/', function (req, res) {
-    res.sendFile(path.join(__dirname, '/dist/html/index.html'));
+    res.sendFile(path.join(__dirname, '/src/html/index.html'));
 });
-
-// app.get('/code', function (req, res) {
-//     res.sendFile(path.join(__dirname, '/dist/html/pages/code/code.html'));
-// });
-
-// app.get('/account', function (req, res) {
-//     res.sendFile(path.join(__dirname, '/dist/html/pages/account.html'));
-// });

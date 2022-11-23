@@ -6,4 +6,4 @@ gulp.src(['./src/html/**/*.html'])
     prefix: '@@',
     basepath: '@file'
 }))
-.pipe(gulp.dest('./dist/html'));
+.pipe(gulp.dest('./dist'));
