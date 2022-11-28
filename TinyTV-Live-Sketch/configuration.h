@@ -1,7 +1,7 @@
 // Change PLATFORM depending on what you're compiling for
 #define TINYTV_2_PLATFORM 0
 #define TINYTV_MINI_PLATFORM 1
-#define PLATFORM TINYTV_2_PLATFORM
+#define PLATFORM TINYTV_MINI_PLATFORM
 
 // Screen and drawing area parameters
 #if PLATFORM==TINYTV_MINI_PLATFORM
