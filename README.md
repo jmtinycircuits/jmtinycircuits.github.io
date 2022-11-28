@@ -1,11 +1,5 @@
 # TinyCircuits-Web-Programming-Platform
 
-## TODO
-* [] Make this work with TinyTV Mini
-* [] Make sure fill buffer loop will timeout after not getting data for long enough and go back to looking for TV detection command
-* [] Make streaming portion of firmware into class and make it able to be dropped in
-* [] 
-
 ## How to build and develop
 
 1. If you just cloned this repo, execute `npm i` in the cloned root folder to install dependencies for building the static site (only static, no server interaction).
