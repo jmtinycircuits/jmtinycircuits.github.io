@@ -7,16 +7,20 @@ class JPEGStreamer{
         this.TINYTV_2_H = 135;
         this.TINYTV_MINI_W = 64;
         this.TINYTV_MINI_H = 64;
+        this.TINYTV_ROUND_W = 240;
+        this.TINYTV_ROUND_H = 240;
 
         this.TV_TYPES = {
             NONE: "NONE",
             TINYTV_2: "TV2",
-            TINYTV_MINI: "TVMINI"
+            TINYTV_MINI: "TVMINI",
+            TINYTV_ROUND: "TVROUND",
         };
 
         this.TV_JPEG_QUALITIES = {
             TINYTV_2: 0.8,
-            TINYTV_MINI: 0.92
+            TINYTV_MINI: 0.92,
+            TINYTV_ROUND: 0.6,
         }
 
         this.TV_FIT_TYPES = {
@@ -110,8 +114,6 @@ class JPEGStreamer{
 
 
     async #processCapturedFrames(videoFrame, controller){
-        console.log("Sending frames");
-
         if(this.lastFrameSent){
             this.lastFrameSent = false;
             
@@ -159,7 +161,9 @@ class JPEGStreamer{
                 this.streamProcessor = new MediaStreamTrackProcessor({ track: this.streamVideoTrack });
                 this.streamGenerator = new MediaStreamTrackGenerator({ kind: 'video' });
                 this.streamTransformer = new TransformStream({
-                    transform: this.#processCapturedFrames.bind(this)
+                    transform: this.#processCapturedFrames.bind(this),
+                    writableStrategy: {highWaterMark: 1},
+                    readableStrategy: {highWaterMark: 1}
                 });
     
                 this.streamProcessor.readable.pipeThrough(this.streamTransformer).pipeTo(this.streamGenerator.writable);
@@ -254,6 +258,14 @@ class JPEGStreamer{
             }else if(fitType == this.TV_FIT_TYPES.FILL){
                 this.#fitFill(this.TINYTV_MINI_W, this.TINYTV_MINI_H);
             }
+        }else if(this.detectedTVType == this.TV_TYPES.TINYTV_ROUND){
+            if(fitType == undefined || fitType == this.TV_FIT_TYPES.CONTAIN){
+                this.#fitContain(this.TINYTV_ROUND_W, this.TINYTV_ROUND_H, videoW, videoH);
+            }else if(fitType == this.TV_FIT_TYPES.COVER){
+                this.#fitCover(this.TINYTV_ROUND_W, this.TINYTV_ROUND_H, videoW, videoH);
+            }else if(fitType == this.TV_FIT_TYPES.FILL){
+                this.#fitFill(this.TINYTV_ROUND_W, this.TINYTV_ROUND_H);
+            }
         }
     }
 
@@ -285,6 +297,12 @@ class JPEGStreamer{
                 this.offscreenCanvas.height = this.TINYTV_MINI_H;
                 this.currentJPEGQuality = this.TV_JPEG_QUALITIES.TINYTV_MINI;
                 this.#onTVDetect("TinyTV Mini");
+            }else if(this.receivedText.indexOf(this.TV_TYPES.TINYTV_ROUND) != -1){
+                this.detectedTVType = this.TV_TYPES.TINYTV_ROUND;
+                this.offscreenCanvas.width = this.TINYTV_ROUND_W;
+                this.offscreenCanvas.height = this.TINYTV_ROUND_H;
+                this.currentJPEGQuality = this.TV_JPEG_QUALITIES.TINYTV_ROUND;
+                this.#onTVDetect("TinyTV Round");
             }
         }
     }

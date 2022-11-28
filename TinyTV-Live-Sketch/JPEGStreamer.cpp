@@ -67,6 +67,8 @@ uint8_t JPEGStreamer::commandCheck(uint8_t *jpegBuffer){
       cdc->print("TV2");
     }else if(tinyTVType == TINYTV_TYPE::TINYTV_MINI){
       cdc->print("TVMINI");
+    }else if(tinyTVType == TINYTV_TYPE::TINYTV_ROUND){
+      cdc->print("TVROUND");
     }
     return COMMAND_TYPE::TINYTV_TYPE;
   }

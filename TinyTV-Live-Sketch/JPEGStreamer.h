@@ -29,7 +29,8 @@ class JPEGStreamer{
 
     enum TINYTV_TYPE{
         TINYTV_2=0,
-        TINYTV_MINI
+        TINYTV_MINI=1,
+        TINYTV_ROUND=2
     };
 
     enum COMMAND_TYPE{
