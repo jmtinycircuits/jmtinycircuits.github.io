@@ -57,12 +57,12 @@ void JPEGStreamer::stopBufferFilling(){
 
 
 uint8_t JPEGStreamer::commandCheck(uint8_t *jpegBuffer){
-// "FF D8 FF E0" is the start of a jpeg image
-  if(jpegBuffer[2] == 0xFF && jpegBuffer[3] == 0xD8 && jpegBuffer[4] == 0xFF && jpegBuffer[5] == 0xE0){
+// "0x30 0x30 0x64 0x63" is the start of a avi frame
+  if(jpegBuffer[0] == 0x30 && jpegBuffer[1] == 0x30 && jpegBuffer[2] == 0x64 && jpegBuffer[3] == 0x63){
     frameDeliminatorAcquired = true;
     return COMMAND_TYPE::FRAME_DELIMINATOR;
     
-  }else if(jpegBuffer[2] == 'T' && jpegBuffer[3] == 'Y' && jpegBuffer[4] == 'P' && jpegBuffer[5] == 'E'){
+  }else if(jpegBuffer[4] == 'T' && jpegBuffer[5] == 'Y' && jpegBuffer[6] == 'P' && jpegBuffer[7] == 'E'){
     if(tinyTVType == TINYTV_TYPE::TINYTV_2){
       cdc->print("TV2");
     }else if(tinyTVType == TINYTV_TYPE::TINYTV_MINI){
@@ -85,7 +85,9 @@ void JPEGStreamer::commandSearch(uint8_t *jpegBuffer){
     jpegBuffer[2] = jpegBuffer[3];
     jpegBuffer[3] = jpegBuffer[4];
     jpegBuffer[4] = jpegBuffer[5];
-    jpegBuffer[5] = cdc->read();
+    jpegBuffer[5] = jpegBuffer[6];
+    jpegBuffer[6] = jpegBuffer[7];
+    jpegBuffer[7] = cdc->read();
 
     if(commandCheck(jpegBuffer) == COMMAND_TYPE::FRAME_DELIMINATOR){
       break;
@@ -95,9 +97,9 @@ void JPEGStreamer::commandSearch(uint8_t *jpegBuffer){
 
 
 bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount){
-  // Figure out the frame size and go back to deliminator searching if out of bounds
+  // Figure out the frame size or go back to deliminator searching if out of bounds
   if(frameSize == 0){
-    frameSize = (((uint16_t)jpegBuffer[0]) << 8) | ((uint16_t)jpegBuffer[1]);
+    frameSize = (((uint16_t)jpegBuffer[7]) << 24) | (((uint16_t)jpegBuffer[6]) << 16) | (((uint16_t)jpegBuffer[5]) << 8) | ((uint16_t)jpegBuffer[4]);
 
     if(frameSize >= jpegBufferSize){
       stopBufferFilling();
@@ -114,11 +116,10 @@ bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize
 
     // Just in case, check if this read will take us out of bounds, if so, restart (shouldn't happen except for future changes forgetting about this)
     if(jpegBufferReadCount+bytesToReadCount < frameSize){
-      jpegBufferReadCount += cdc->read((jpegBuffer+2) + jpegBufferReadCount, bytesToReadCount);
+      jpegBufferReadCount += cdc->read(jpegBuffer + jpegBufferReadCount, bytesToReadCount);
     }else{
       // Not going to get reset by decode so do it here so it doesn't get stuck out of bounds forever
-      // (reset to 4 since deliminator searcher will find the first 4 jpeg bytes)
-      jpegBufferReadCount = 4;
+      jpegBufferReadCount = 0;
 
       stopBufferFilling();
       cdc->println("ERROR: Tried to place jpeg data out of bounds...");
@@ -151,9 +152,9 @@ bool JPEGStreamer::incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBu
 
     // Wait for decoding to finish and then reset incoming jpeg data read counts (otherwise may start at something other than zero next time)
     while(jpegBuffer0Semaphore != JPEG_BUFFER_SEMAPHORE::UNLOCKED && jpegBuffer1Semaphore != JPEG_BUFFER_SEMAPHORE::UNLOCKED){}
-    // (reset to 4 since deliminator searcher will find the first 4 jpeg bytes)
-    jpegBuffer0ReadCount = 4;
-    jpegBuffer1ReadCount = 4;
+
+    jpegBuffer0ReadCount = 0;
+    jpegBuffer1ReadCount = 0;
   }
 
   // No buffer filled, wait for more bytes
@@ -163,7 +164,7 @@ bool JPEGStreamer::incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBu
 
 void JPEGStreamer::decode(uint8_t *jpegBuffer, uint16_t &jpegBufferReadCount, JPEG_DRAW_CALLBACK *pfnDraw){
   // Open and decode (start 2 bytes from start since those are the frame size bytes)
-  if (!jpeg->openRAM(jpegBuffer+2, jpegBufferReadCount, pfnDraw)){
+  if (!jpeg->openRAM(jpegBuffer, jpegBufferReadCount, pfnDraw)){
     cdc->print("Could not open frame from RAM! Error: ");
     cdc->println(jpeg->getLastError());
     cdc->println("See https://github.com/bitbank2/JPEGDEC/blob/master/src/JPEGDEC.h#L83");
@@ -177,6 +178,6 @@ void JPEGStreamer::decode(uint8_t *jpegBuffer, uint16_t &jpegBufferReadCount, JP
   //   t0 = millis();
   // }
 
-  // Reset now that the frame is decoded (reset to 4 since deliminator searcher will find the first 4 jpeg bytes)
-  jpegBufferReadCount = 4;
+  // Reset now that the frame is decoded
+  jpegBufferReadCount = 0;
 }

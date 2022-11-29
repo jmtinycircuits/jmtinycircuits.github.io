@@ -1,6 +1,5 @@
 // COMPILE NOTE: change platform in configuration.h to switch between TinyTV 2 and Mini
-// Make sure to set 'CFG_TUD_CDC' to 2 in C:\Users\TinyCircuits\AppData\Local\Arduino15\packages\rp2040\hardware\rp2040\2.6.0\libraries\Adafruit_TinyUSB_Arduino\src\arduino\ports\rp2040\tusb_config_rp2040.h
-// Also make sure to CFG_TUD_CDC_RX_BUFSIZE and CFG_TUD_CDC_TX_BUFSIZE to 2048 instead of default 512 to speed up transfer
+// See README.md for changes to CDC buffer sizes
 
 #include <JPEGDEC.h>
 #include <Adafruit_TinyUSB.h>
@@ -24,6 +23,28 @@ uint16_t screenBuffer[SCREEN_BUFFER_SIZE];
 uint8_t videoBuffer0[20000];
 uint8_t videoBuffer1[20000];
 
+
+// Update the bytes in the screen buffer when decoding jpeg frame
+int draw(JPEGDRAW* block){
+  // Check that the block is within bounds of screen, otherwise, don't draw it
+  if(block->x < VIDEO_W && block->y < VIDEO_H){
+    for (int bx = 0; bx < block->iWidth; bx++){
+      for (int by = 0; by < block->iHeight; by++){
+        int x = block->x + bx;
+        int y = block->y + by;
+
+        // Check that the pixel within the block is within screen bounds and then draw
+        if(x < VIDEO_W && y < VIDEO_H){
+          int bufferIndex = y * VIDEO_W + x;
+          int blockPixelIndex = by * block->iWidth + bx;
+          screenBuffer[bufferIndex] = ((uint16_t*)block->pPixels)[blockPixelIndex];
+        }
+      }
+    }
+  }
+
+  return 1;
+}
 
 
 void setup(){
@@ -62,16 +83,17 @@ void setup1(){}
 
 
 void loop(){
+  // This needs called all the time to consume potential serial data and switch to live mode
   streamer.fillBuffers(videoBuffer0, videoBuffer1, sizeof(videoBuffer0)/sizeof(videoBuffer0[0]));
 }
 
 
 void loop1(){
+  // If switched to live mode, decode and crop, otherwise, do normal video playing
   if(streamer.live){
     streamer.decode(videoBuffer0, videoBuffer1, screenBuffer, draw);
     effects.cropCorners(screenBuffer, VIDEO_W, VIDEO_H);
   }else{
-    // Not live, do normal video playing stuff
     for(int i=0; i<SCREEN_BUFFER_SIZE; i++){
       screenBuffer[i] = TFT_BLUE;
     }

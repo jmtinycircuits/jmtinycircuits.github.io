@@ -132,7 +132,11 @@ class JPEGStreamer{
                 // Handle sending frames
                 if(this.serial.connected){
                     blob.arrayBuffer().then(async (buffer) => {
-                        await this.serial.write(new Uint8Array([(blob.size >> 8) & 0b11111111, blob.size & 0b11111111]), false);
+                        // Write the AVI chunk header bytes and the 4 bytes for the frame length
+                        await this.serial.write(new Uint8Array([0x30, 0x30, 0x64, 0x63,  blob.size & 0x000000ff,
+                                                                                        (blob.size & 0x0000ff00) >> 8,
+                                                                                        (blob.size & 0x00ff0000) >> 16,
+                                                                                        (blob.size & 0xff000000) >> 24]), false);
                         await this.serial.write(new Uint8Array(buffer), false);
                         this.lastFrameSent = true;
                     });
