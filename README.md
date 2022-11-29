@@ -6,7 +6,7 @@
 2. Execute `npm run watch` in root to run server at `https://127.0.0.1/`. Each time a file that is marked as tracked in `tailwind.config.js` is saved, the website will automatically update but you'll need to refresh the page. The triggering files are for Tailwind CSS and daisyUI. If a JS/CSS/HTML file uses Tailwind CSS or daisyUI classes, make sure they are tracked in `tailwind.config.js` otherwise you'll get bugs where elements do not have the correct formatting or disappear because the position formatting was lost.
 3. Should be able to run `npm run build` to build the site without watching, see `package.json` for commands/scripts
 
-NOTE: Uses assets from 'src/js' and 'src/html' during `npm run watch` but the compiled css is in 'dist' (the css is the only asset in 'dist' that has to do with running the page during 'npm run watch').
+NOTE: Uses assets from 'src/js' and 'src/html' during `npm run watch` but the compiled css is in 'dist' (the css is the only asset in 'dist' that has to do with running the page during `npm run watch`).
 
 ## Build process
 `package.json` contains a command `build` under `scripts` that is run when the `npm run watch` command detects a change. When that build command runs it builds the Tailwind CSS output in `dist`, based on the input file, and runs a gulpfile that will move any html files, like `src/html/index.html`, to `dist` (should only be one file `index.html` but it will move more). Then the JavaScript files under `src/js` are webpacked and combined into a file `dist/main.js.`
