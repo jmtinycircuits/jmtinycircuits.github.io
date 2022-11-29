@@ -4,7 +4,6 @@
 JPEGStreamer::JPEGStreamer(JPEGDEC *_jpeg, Adafruit_USBD_CDC *_cdc, uint8_t _tinyTVType){
   jpeg = _jpeg;
   cdc = _cdc;
-
   tinyTVType = _tinyTVType;
 }
 
@@ -50,14 +49,14 @@ void JPEGStreamer::decode(uint8_t *jpegBuffer0, uint8_t *jpegBuffer1, uint16_t *
 
 
 void JPEGStreamer::stopBufferFilling(){
-  // Need to reset frameSize to 0 to ensure assigned next frame size
+  // Need to reset frameSize to 0 to ensure assigned to next frame size
   frameSize = 0;
   frameDeliminatorAcquired = false;
 }
 
 
 uint8_t JPEGStreamer::commandCheck(uint8_t *jpegBuffer){
-// "0x30 0x30 0x64 0x63" is the start of a avi frame
+  // "0x30 0x30 0x64 0x63" is the start of an avi frame
   if(jpegBuffer[0] == 0x30 && jpegBuffer[1] == 0x30 && jpegBuffer[2] == 0x64 && jpegBuffer[3] == 0x63){
     frameDeliminatorAcquired = true;
     return COMMAND_TYPE::FRAME_DELIMINATOR;
@@ -79,7 +78,7 @@ uint8_t JPEGStreamer::commandCheck(uint8_t *jpegBuffer){
 
 void JPEGStreamer::commandSearch(uint8_t *jpegBuffer){
   while(cdc->available()){
-    // Move all bytes from right to left in buffer
+    // Move all bytes from right (highest index) to left (lowest index) in buffer
     jpegBuffer[0] = jpegBuffer[1];
     jpegBuffer[1] = jpegBuffer[2];
     jpegBuffer[2] = jpegBuffer[3];
@@ -97,7 +96,7 @@ void JPEGStreamer::commandSearch(uint8_t *jpegBuffer){
 
 
 bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount){
-  // Figure out the frame size or go back to deliminator searching if out of bounds
+  // Figure out the frame size or go back to deliminator searching if out of bounds when filling
   if(frameSize == 0){
     frameSize = (((uint16_t)jpegBuffer[7]) << 24) | (((uint16_t)jpegBuffer[6]) << 16) | (((uint16_t)jpegBuffer[5]) << 8) | ((uint16_t)jpegBuffer[4]);
 
@@ -131,11 +130,9 @@ bool JPEGStreamer::fillBuffer(uint8_t *jpegBuffer, const uint16_t jpegBufferSize
 }
 
 
-// Either respond to commands, switch fill states plus fill buffers, or timeout live flag
+// Either respond to commands, switch fill states and fill buffers, or timeout live flag
 bool JPEGStreamer::incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBufferSize, uint16_t &jpegBufferReadCount){
-  uint16_t available = cdc->available();
-
-  if(available > 0){
+  if(cdc->available() > 0){
     liveTimeoutStart = millis();
 
     if(frameDeliminatorAcquired){
@@ -163,7 +160,7 @@ bool JPEGStreamer::incomingCDCHandler(uint8_t *jpegBuffer, const uint16_t jpegBu
 
 
 void JPEGStreamer::decode(uint8_t *jpegBuffer, uint16_t &jpegBufferReadCount, JPEG_DRAW_CALLBACK *pfnDraw){
-  // Open and decode (start 2 bytes from start since those are the frame size bytes)
+  // Open and decode in memory
   if (!jpeg->openRAM(jpegBuffer, jpegBufferReadCount, pfnDraw)){
     cdc->print("Could not open frame from RAM! Error: ");
     cdc->println(jpeg->getLastError());
