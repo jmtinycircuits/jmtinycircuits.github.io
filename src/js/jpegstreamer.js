@@ -217,7 +217,7 @@ class JPEGStreamer{
         if(videoW > videoH){
             this.#fitWidth(screenW, screenH, videoW, videoH);
         }else{
-           this.#fitHeight(screenW, screenH, videoW, videoH);
+            this.#fitHeight(screenW, screenH, videoW, videoH);
         }
     }
 
@@ -225,7 +225,7 @@ class JPEGStreamer{
         if(videoW < videoH){
             this.#fitWidth(screenW, screenH, videoW, videoH);
         }else{
-           this.#fitHeight(screenW, screenH, videoW, videoH);
+            this.#fitHeight(screenW, screenH, videoW, videoH);
         }
     }
 
