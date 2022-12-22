@@ -70,6 +70,10 @@ class JPEGStreamer{
         this.offscreenCanvas = new OffscreenCanvas(this.fitFrameW, this.fitFrameH);
         this.offscreenCanvasCtx = this.offscreenCanvas.getContext("2d");
 
+        // https://stackoverflow.com/a/6454685
+        let workerBlob = new Blob([document.querySelector('#worker').textContent], { type: "text/javascript" })
+        this.convertWorker = new Worker(window.URL.createObjectURL(workerBlob));
+
         // External callbacks triggered internally
         this.onSerialConnect = () => {};
         this.onSerialDisconnect = () => {};
@@ -127,28 +131,43 @@ class JPEGStreamer{
             this.offscreenCanvasCtx.fill();
 
             this.offscreenCanvasCtx.drawImage(videoFrame, this.fitFrameX, this.fitFrameY, this.fitFrameW, this.fitFrameH);
-            this.offscreenCanvas.convertToBlob({type: "image/jpeg", quality: this.currentJPEGQuality}).then((blob) => {
 
-                // Handle sending frames
-                if(this.serial.connected){
-                    blob.arrayBuffer().then(async (buffer) => {
-                        // Write the AVI chunk header bytes and the 4 bytes for the frame length
-                        await this.serial.write(new Uint8Array([0x30, 0x30, 0x64, 0x63,  blob.size & 0x000000ff,
-                                                                                        (blob.size & 0x0000ff00) >> 8,
-                                                                                        (blob.size & 0x00ff0000) >> 16,
-                                                                                        (blob.size & 0xff000000) >> 24]), false);
-                        await this.serial.write(new Uint8Array(buffer), false);
-                        this.lastFrameSent = true;
-                    });
-                }else{
-                    this.lastFrameSent = true;
-                }
+            this.convertWorker.postMessage([this.fitFrameX, this.fitFrameY, this.fitFrameW, this.fitFrameH, this.offscreenCanvas.transferToImageBitmap()]);
+            this.lastFrameSent = true;
+            // this.convertWorker.postMessage({canvas: this.offscreenCanvas}, [this.offscreenCanvas]);
 
-                // Handle drawing scaled and jpeg compressed frames in preview
-                createImageBitmap(blob, 0, 0, width, height).then((bitmap) => {
-                    this.onNewCompressedBitmap(bitmap, width, height);
-                });
-            });
+            // let blob = await this.offscreenCanvas.convertToBlob({type: "image/jpeg", quality: this.currentJPEGQuality});
+
+            // console.log(blob.size);
+            // this.lastFrameSent = true;
+            // videoFrame.close();
+            // return;
+
+
+
+
+            // this.offscreenCanvas.convertToBlob({type: "image/jpeg", quality: this.currentJPEGQuality}).then((blob) => {
+            //     console.log(blob.size);
+            //     // Handle sending frames
+            //     if(this.serial.connected){
+            //         blob.arrayBuffer().then(async (buffer) => {
+            //             // Write the AVI chunk header bytes and the 4 bytes for the frame length
+            //             await this.serial.write(new Uint8Array([0x30, 0x30, 0x64, 0x63,  blob.size & 0x000000ff,
+            //                                                                             (blob.size & 0x0000ff00) >> 8,
+            //                                                                             (blob.size & 0x00ff0000) >> 16,
+            //                                                                             (blob.size & 0xff000000) >> 24]), false);
+            //             await this.serial.write(new Uint8Array(buffer), false);
+            //             this.lastFrameSent = true;
+            //         });
+            //     }else{
+            //         this.lastFrameSent = true;
+            //     }
+
+            //     // Handle drawing scaled and jpeg compressed frames in preview
+            //     createImageBitmap(blob, 0, 0, width, height).then((bitmap) => {
+            //         this.onNewCompressedBitmap(bitmap, width, height);
+            //     });
+            // });
         }
 
         videoFrame.close();

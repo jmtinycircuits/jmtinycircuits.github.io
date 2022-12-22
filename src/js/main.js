@@ -1,7 +1,6 @@
 import { JPEGStreamer } from "./jpegstreamer.js";
 import { showOrHideElement, showAlertPopup } from "./utility.js" 
 
-
 let canvasOutput = document.getElementById("canvasOutput");
 let canvasOutputCtx = canvasOutput.getContext("2d");
 let btnConnectTV = document.getElementById("btnConnectTV");
