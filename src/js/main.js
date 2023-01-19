@@ -50,7 +50,7 @@ jpegStreamer.onNewCompressedBitmap = (bitmap, width, height) => {
 }
 
 
-btnConnectTV.onclick = () => {jpegStreamer.connectSerial()};
+// btnConnectT+V.onclick = () => {jpegStreamer.connectSerial()};
 
 
 inputContain.oninput = (event) => {

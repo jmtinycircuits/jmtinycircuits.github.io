@@ -14,7 +14,7 @@
 </script>
 
 
-<html data-theme="night">
+<html data-theme="dark">
     <head>
         <title>TinyTV Live</title>
         <meta charset="UTF-8">
@@ -26,7 +26,47 @@
         <!-- Main container -->
         <div class="absolute top-0 left-0 bottom-0 right-0 flex flex-col justify-center items-center">
             <!-- Connect/disconnect button -->
-            <button id="btnConnectTV" class="btn btn-lg btn-primary m-4">Connect TV</button>
+            <!-- <button id="btnConnectTV" class="btn btn-lg btn-primary m-4">Connect TV</button> -->
+
+            <!-- <h1 class="text-4xl font-bold mb-8">What would you like to do?</h1> -->
+
+            <div class="w-full flex flex-row justify-center items-center">
+                <div class="card w-[450px] bg-base-300 shadow-xl animate-fade-in-up">
+                    <div class="card-body">
+                        <h2 class="card-title">Update</h2>
+                        <p>Update your TinyTV, TinyTV 2, or TinyTV Mini</p>
+                        <div class="card-actions justify-end">
+                            <button class="btn btn-primary">Update</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mx-14"></div>
+
+                <div class="card w-[450px] bg-base-300 shadow-xl animate-fade-in-up">
+                    <div class="card-body">
+                        <h2 class="card-title">Stream</h2>
+                        <p>Stream your computer to TinyTV 2 or TinyTV Mini!</p>
+                        <div class="card-actions justify-end">
+                            <button class="btn btn-primary">Stream</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mx-14"></div>
+
+                <div class="card w-[450px] bg-base-300 shadow-xl animate-fade-in-up">
+                    <div class="card-body">
+                        <h2 class="card-title">Convert</h2>
+                        <p>Learn how to convert and upload videos to any TinyTV</p>
+                        <div class="card-actions justify-end">
+                            <button class="btn btn-primary">Convert</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
 
             <div id="divDetectingTVType" class="whitespace-nowrap flex flex-row flex-nowrap absolute invisible transition-all duration-300 opacity-0">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="animate-spin h-6 w-6 mr-1">
