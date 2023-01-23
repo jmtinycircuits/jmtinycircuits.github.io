@@ -25,7 +25,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tailwindcss -i ./src/tailwind_input.css -o ./dist/tailwind_output.css --minify & node gulpfile-initial.js & npx webpack --config webpack.config.js & python dist_index_find_and_replace.py",
+    "build": "npx tailwindcss -i ./src/tailwind_input.css -o ./dist/tailwind_output.css --minify & node gulpfile-initial.js",
     "start": "node index.js",
     "watch": "npm-watch"
   },

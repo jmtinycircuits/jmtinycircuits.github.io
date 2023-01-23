@@ -21,3 +21,15 @@ https.createServer(options, app).listen(443);
 app.get('/', function (req, res) {
     res.sendFile(path.join(__dirname, '/src/html/index.html'));
 });
+
+app.get('/update', function (req, res) {
+    res.sendFile(path.join(__dirname, '/src/html/update.html'));
+});
+
+app.get('/choose', function (req, res) {
+    res.sendFile(path.join(__dirname, '/src/html/choose.html'));
+});
+
+app.get('/stream', function (req, res) {
+    res.sendFile(path.join(__dirname, '/src/html/stream.html'));
+});
