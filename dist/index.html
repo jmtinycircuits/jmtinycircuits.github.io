@@ -1,19 +1,5 @@
 <!doctype html>
 
-
-<script id="worker" type="javascript/worker">
-    // This script won't be parsed by JS engines because its type is javascript/worker.
-
-    self.offscreenCanvas = new OffscreenCanvas(216, 135);
-    self.offscreenCanvasCtx = this.offscreenCanvas.getContext("2d");
-
-    self.onmessage = function(e) {
-      console.log(e.data);
-      //console.log(navigator.serial);
-    };
-</script>
-
-
 <html data-theme="night">
     <head>
         <title>TinyTV</title>

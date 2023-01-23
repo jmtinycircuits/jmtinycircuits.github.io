@@ -1,34 +1,7 @@
-import { Serial } from "./serial.js";
+import { TV_SIZES, TV_TYPES, TV_JPEG_QUALITIES, TV_FIT_TYPES } from "./jpegstreamerCommon.js";
 
 class JPEGStreamer{
     constructor(){
-        // Constants
-        this.TINYTV_2_W = 216;
-        this.TINYTV_2_H = 135;
-        this.TINYTV_MINI_W = 64;
-        this.TINYTV_MINI_H = 64;
-        this.TINYTV_ROUND_W = 240;
-        this.TINYTV_ROUND_H = 240;
-
-        this.TV_TYPES = {
-            NONE: "NONE",
-            TINYTV_2: "TV2",
-            TINYTV_MINI: "TVMINI",
-            TINYTV_ROUND: "TVROUND",
-        };
-
-        this.TV_JPEG_QUALITIES = {
-            TINYTV_2: 0.8,
-            TINYTV_MINI: 0.92,
-            TINYTV_ROUND: 0.6,
-        }
-
-        this.TV_FIT_TYPES = {
-            CONTAIN: "CONTAIN",
-            COVER: "COVER",
-            FILL: "FILL"
-        }
-
         // https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/frameRate
         // https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints
         const DISPLAY_MEDIA_OPTIONS = {
@@ -42,16 +15,18 @@ class JPEGStreamer{
         this.textDecoder = new TextDecoder();
 
         // General dynamic flags
-        this.detectedTVType = this.TV_TYPES.NONE;
+        this.detectedTVType = TV_TYPES.NONE;
         this.currentFitType = undefined;
         this.lastFrameSent = true;
 
         // Serial
-        this.serial = new Serial([{usbVendorId: 11914, usbProductId: 5}, {usbVendorId:11914, usbProductId: 10}]);
-        this.serial.onConnect = () => {this.#onSerialConnect()};
-        this.serial.onDisconnect = () => {this.#onSerialDisconnect()};
-        this.serial.onData = (data) => {this.#processSerialData(data)};
-        this.receivedText = "";
+        this.vendorID = 11914;
+        this.productID = 10;
+
+        // this.serial = new Serial([{usbVendorId: 11914, usbProductId: 5}, {usbVendorId:11914, usbProductId: 10}]);
+        // this.serial.onConnect = () => {this.#onSerialConnect()};
+        // this.serial.onDisconnect = () => {this.#onSerialDisconnect()};
+        // this.serial.onData = (data) => {this.#processSerialData(data)};
 
         // Frame capture
         // (https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrackProcessor#examples)
@@ -64,15 +39,60 @@ class JPEGStreamer{
         // Canvas/frame scaling
         this.fitFrameX = 0;
         this.fitFrameY = 0;
-        this.fitFrameW = this.TINYTV_2_W;  // Just choose TinyTV 2 as a default
-        this.fitFrameH = this.TINYTV_2_H;
-        this.currentJPEGQuality = undefined;
+        this.fitFrameW = TV_SIZES.TINYTV_2_W;  // Just choose TinyTV 2 as a default
+        this.fitFrameH = TV_SIZES.TINYTV_2_H;
         this.offscreenCanvas = new OffscreenCanvas(this.fitFrameW, this.fitFrameH);
         this.offscreenCanvasCtx = this.offscreenCanvas.getContext("2d");
 
-        // https://stackoverflow.com/a/6454685
-        let workerBlob = new Blob([document.querySelector('#worker').textContent], { type: "text/javascript" })
-        this.convertWorker = new Worker(window.URL.createObjectURL(workerBlob));
+        // const workerScript = 
+        // "self.vendorID = " + this.vendorID + ";" +
+        // "self.productID = " + this.productID + ";" +
+        // `
+        // self.offscreenCanvas = new OffscreenCanvas(216, 135);
+        // self.offscreenCanvasCtx = this.offscreenCanvas.getContext("2d");
+        // self.port = undefined;
+        
+        // self.onmessage = async (message) => {
+        //     if(message.data.messageType == "connect"){
+        //         (await navigator.serial.getPorts()).forEach(async (port, index, ports) => {
+        //             const info = port.getInfo();
+        //             if(info.usbProductId == self.productID && info.usbVendorId == self.vendorID){
+        //                 self.port = port;
+        //                 await self.port.open({ baudRate: 2000000, bufferSize: 2048 });
+        //                 return;
+        //             }
+        //         });
+        //     }
+        // };
+        // `
+        
+
+        // let workerBlob = new Blob([workerScript], { type: "text/javascript" });
+        // this.convertWorker = new Worker(window.URL.createObjectURL(workerBlob));
+        this.convertWorker = new Worker("/src/js/lib/jpegstreamer/jpegstreamerWorker.js", {
+            type: 'module'
+        });
+        this.convertWorker.onmessage = async (message) => {
+            if(message.data.messageType == "lastframesent"){
+                this.lastFrameSent = true;
+            }else if(message.data.messageType == "connected"){
+                this.#onSerialConnect();
+            }else if(message.data.messageType == "disconnected"){
+                this.#onSerialDisconnect();
+            }else if(message.data.messageType == "tvtype"){
+                if(message.data.messageData == TV_TYPES.TINYTV_2){
+                    this.detectedTVType = TV_TYPES.TINYTV_2;
+                    this.offscreenCanvas.width = TV_SIZES.TINYTV_2_W;
+                    this.offscreenCanvas.height = TV_SIZES.TINYTV_2_H;
+                    this.#onTVDetect("TinyTV 2");
+                }else if(message.data.messageData == TV_TYPES.TINYTV_MINI){
+                    this.detectedTVType = TV_TYPES.TINYTV_MINI;
+                    this.offscreenCanvas.width = TV_SIZES.TINYTV_MINI_W;
+                    this.offscreenCanvas.height = TV_SIZES.TINYTV_MINI_H;
+                    this.#onTVDetect("TinyTV Mini");
+                }
+            }
+        };
 
         // External callbacks triggered internally
         this.onSerialConnect = () => {};
@@ -83,35 +103,14 @@ class JPEGStreamer{
     }
 
 
-    #requestTVType(){
-        // Every 100ms ask anything connected for its type (firmware should respond with a string)
-        let timeout = undefined;
-        let requestTVType = () => {
-            if(this.detectedTVType == this.TV_TYPES.NONE && this.serial.connected){
-                timeout = setTimeout(() => {
-                    this.serial.write("TYPE", true);
-                    requestTVType();
-                }, 100);
-            }
-        }
-        requestTVType();
-    }
-
-
     #onSerialConnect(){
-        // Reset so requesting TV type starts with a blank string
-        this.receivedText = "";
-
         this.onSerialConnect();
-
-        // Provide an initial delay to keep the UI transition looking smooth
-        setTimeout(() => {this.#requestTVType()}, 250);
     }
 
 
     #onSerialDisconnect(){
         // Disconnected, reset since don't know what the next TV might be
-        this.detectedTVType = this.TV_TYPES.NONE;
+        this.detectedTVType = TV_TYPES.NONE;
         this.onSerialDisconnect();
         this.#teardownStream();
     }
@@ -125,15 +124,22 @@ class JPEGStreamer{
             let height = this.offscreenCanvas.height;
             this.#setScreenFit(undefined, videoFrame.codedWidth, videoFrame.codedHeight);
 
+            // Fill offscreen canvas with black
             this.offscreenCanvasCtx.beginPath();
             this.offscreenCanvasCtx.rect(0, 0, width, height);
             this.offscreenCanvasCtx.fillStyle = "black";
             this.offscreenCanvasCtx.fill();
 
+            // Scale stream source to TV size
             this.offscreenCanvasCtx.drawImage(videoFrame, this.fitFrameX, this.fitFrameY, this.fitFrameW, this.fitFrameH);
 
-            this.convertWorker.postMessage([this.fitFrameX, this.fitFrameY, this.fitFrameW, this.fitFrameH, this.offscreenCanvas.transferToImageBitmap()]);
-            this.lastFrameSent = true;
+            // Send frame dimensions and data to worker to be made
+            // into a jpeg and written to the device through serial
+            this.convertWorker.postMessage({messageType: "frame", messageData: [this.offscreenCanvas.transferToImageBitmap()]});
+            // this.convertWorker.postMessage([this.fitFrameW, this.fitFrameH, this.offscreenCanvas.transferToImageBitmap()]);
+
+            // this.convertWorker.postMessage([this.fitFrameX, this.fitFrameY, this.fitFrameW, this.fitFrameH, this.offscreenCanvas.transferToImageBitmap()]);
+            // this.lastFrameSent = true;
             // this.convertWorker.postMessage({canvas: this.offscreenCanvas}, [this.offscreenCanvas]);
 
             // let blob = await this.offscreenCanvas.convertToBlob({type: "image/jpeg", quality: this.currentJPEGQuality});
@@ -208,11 +214,15 @@ class JPEGStreamer{
 
     #onTVDetect(tvString){
         this.onTVDetected(tvString);
-        this.#setupStream().then((result) => {
-            this.onStreamReady();
-        }).catch((reason) => {
-            this.disconnectSerial();
-        });
+
+        // Call the stream setup after a small delay to give the user time to process
+        setTimeout(() => {
+            this.#setupStream().then((result) => {
+                this.onStreamReady();
+            }).catch((reason) => {
+                this.disconnectSerial();
+            });
+        }, 250);
     }
 
 
@@ -257,7 +267,7 @@ class JPEGStreamer{
 
     #setScreenFit(fitType, videoW, videoH){
         if(fitType == undefined && this.currentFitType == undefined){           // Set a default if neither defined
-            fitType = this.TV_FIT_TYPES.CONTAIN;
+            fitType = TV_FIT_TYPES.CONTAIN;
             this.currentFitType = fitType;
         }else if(fitType != undefined && this.currentFitType != undefined){     // Override with passed if both defined
             this.currentFitType = fitType;
@@ -265,79 +275,65 @@ class JPEGStreamer{
             fitType = this.currentFitType;
         }
 
-        if(this.detectedTVType == this.TV_TYPES.TINYTV_2){
-            if(fitType == undefined || fitType == this.TV_FIT_TYPES.CONTAIN){
-                this.#fitContain(this.TINYTV_2_W, this.TINYTV_2_H, videoW, videoH);
-            }else if(fitType == this.TV_FIT_TYPES.COVER){
-                this.#fitCover(this.TINYTV_2_W, this.TINYTV_2_H, videoW, videoH);
-            }else if(fitType == this.TV_FIT_TYPES.FILL){
-                this.#fitFill(this.TINYTV_2_W, this.TINYTV_2_H);
+        if(this.detectedTVType == TV_TYPES.TINYTV_2){
+            if(fitType == undefined || fitType == TV_FIT_TYPES.CONTAIN){
+                this.#fitContain(TV_SIZES.TINYTV_2_W, TV_SIZES.TINYTV_2_H, videoW, videoH);
+            }else if(fitType == TV_FIT_TYPES.COVER){
+                this.#fitCover(TV_SIZES.TINYTV_2_W, TV_SIZES.TINYTV_2_H, videoW, videoH);
+            }else if(fitType == TV_FIT_TYPES.FILL){
+                this.#fitFill(TV_SIZES.TINYTV_2_W, TV_SIZES.TINYTV_2_H);
             }
-        }else if(this.detectedTVType == this.TV_TYPES.TINYTV_MINI){
-            if(fitType == undefined || fitType == this.TV_FIT_TYPES.CONTAIN){
-                this.#fitContain(this.TINYTV_MINI_W, this.TINYTV_MINI_H, videoW, videoH);
-            }else if(fitType == this.TV_FIT_TYPES.COVER){
-                this.#fitCover(this.TINYTV_MINI_W, this.TINYTV_MINI_H, videoW, videoH);
-            }else if(fitType == this.TV_FIT_TYPES.FILL){
-                this.#fitFill(this.TINYTV_MINI_W, this.TINYTV_MINI_H);
-            }
-        }else if(this.detectedTVType == this.TV_TYPES.TINYTV_ROUND){
-            if(fitType == undefined || fitType == this.TV_FIT_TYPES.CONTAIN){
-                this.#fitContain(this.TINYTV_ROUND_W, this.TINYTV_ROUND_H, videoW, videoH);
-            }else if(fitType == this.TV_FIT_TYPES.COVER){
-                this.#fitCover(this.TINYTV_ROUND_W, this.TINYTV_ROUND_H, videoW, videoH);
-            }else if(fitType == this.TV_FIT_TYPES.FILL){
-                this.#fitFill(this.TINYTV_ROUND_W, this.TINYTV_ROUND_H);
+        }else if(this.detectedTVType == TV_TYPES.TINYTV_MINI){
+            if(fitType == undefined || fitType == TV_FIT_TYPES.CONTAIN){
+                this.#fitContain(TV_SIZES.TINYTV_MINI_W, TV_SIZES.TINYTV_MINI_H, videoW, videoH);
+            }else if(fitType == TV_FIT_TYPES.COVER){
+                this.#fitCover(TV_SIZES.TINYTV_MINI_W, TV_SIZES.TINYTV_MINI_H, videoW, videoH);
+            }else if(fitType == TV_FIT_TYPES.FILL){
+                this.#fitFill(TV_SIZES.TINYTV_MINI_W, TV_SIZES.TINYTV_MINI_H);
             }
         }
     }
 
 
     setScreenFit(fitType){
-        if(fitType == this.TV_FIT_TYPES.CONTAIN || fitType == this.TV_FIT_TYPES.COVER || fitType == this.TV_FIT_TYPES.FILL){
+        if(fitType == TV_FIT_TYPES.CONTAIN || fitType == TV_FIT_TYPES.COVER || fitType == TV_FIT_TYPES.FILL){
             this.currentFitType = fitType;
         }
     }
 
 
-    // Only data the TVs should send back is the type of TV it is
-    #processSerialData(data){
-        let decodedData = this.textDecoder.decode(data);
+    async connectSerial(){
+        // Make sure the main thread had the user pair a TinyTV
+        // serial port and it is plugged in for the worker
+        let portFound = false;
 
-        if(this.detectedTVType == this.TV_TYPES.NONE){
-            this.receivedText += decodedData;
-
-            // See if it is any of the TVs, pass a human readable string to the on detect function since it will be displayed
-            if(this.receivedText.indexOf(this.TV_TYPES.TINYTV_2) != -1){
-                this.detectedTVType = this.TV_TYPES.TINYTV_2;
-                this.offscreenCanvas.width = this.TINYTV_2_W;
-                this.offscreenCanvas.height = this.TINYTV_2_H;
-                this.currentJPEGQuality = this.TV_JPEG_QUALITIES.TINYTV_2;
-                this.#onTVDetect("TinyTV 2");
-            }else if(this.receivedText.indexOf(this.TV_TYPES.TINYTV_MINI) != -1){
-                this.detectedTVType = this.TV_TYPES.TINYTV_MINI;
-                this.offscreenCanvas.width = this.TINYTV_MINI_W;
-                this.offscreenCanvas.height = this.TINYTV_MINI_H;
-                this.currentJPEGQuality = this.TV_JPEG_QUALITIES.TINYTV_MINI;
-                this.#onTVDetect("TinyTV Mini");
-            }else if(this.receivedText.indexOf(this.TV_TYPES.TINYTV_ROUND) != -1){
-                this.detectedTVType = this.TV_TYPES.TINYTV_ROUND;
-                this.offscreenCanvas.width = this.TINYTV_ROUND_W;
-                this.offscreenCanvas.height = this.TINYTV_ROUND_H;
-                this.currentJPEGQuality = this.TV_JPEG_QUALITIES.TINYTV_ROUND;
-                this.#onTVDetect("TinyTV Round");
+        (await navigator.serial.getPorts()).forEach((port, index, ports) => {
+            const info = port.getInfo();
+            if(info.usbProductId == this.productID && info.usbVendorId == this.vendorID){
+                portFound = true;
+                return;
             }
+        });
+        
+        // No device, make the user pair one for the worker to auto connect to
+        if(!portFound){
+            try{
+                await navigator.serial.requestPort({filters: [{usbVendorId:this.vendorID, usbProductId:this.productID}]});
+                portFound = true;
+            }catch(err){
+                portFound = false;
+                console.warn(err);
+            }
+        }
+
+        if(portFound){
+            this.convertWorker.postMessage({messageType:'connect', messageData:[]});
         }
     }
 
 
-    connectSerial(){
-        this.serial.connect();
-    }
-
-
     disconnectSerial(){
-        this.serial.disconnect();
+        this.convertWorker.postMessage({messageType:'disconnect', messageData:[]});
     }
 }
 

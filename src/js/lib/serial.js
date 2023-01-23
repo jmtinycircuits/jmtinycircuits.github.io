@@ -101,10 +101,10 @@ class Serial{
 
             this.#readLoop();
 
+            console.log("Serial connected!");
+
             // Call the connected callback for external modules
             await this.onConnect();
-
-            console.log("Serial connected!");
         }catch(error){
             if(error.name == "InvalidStateError"){
                 console.error("Port already open...");
