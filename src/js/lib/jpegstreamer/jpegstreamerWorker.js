@@ -52,16 +52,12 @@ self.serial.onDisconnect = () => {
 }
 
 
-console.log("Web worker!");
 
 self.onmessage = async (message) => {
     if(message.data.messageType == "frame"){
-        // console.log(Date.now(), message.data.messageData);
         self.offscreenCanvasCtx.drawImage(message.data.messageData[0], 0, 0);
 
-
         self.offscreenCanvas.convertToBlob({type: "image/jpeg", quality: self.currentJPEGQuality}).then((blob) => {
-            console.log(blob.size);
             // Handle sending frames
             if(self.serial.connected){
                 blob.arrayBuffer().then(async (buffer) => {

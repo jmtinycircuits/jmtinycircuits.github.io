@@ -3,7 +3,6 @@ import { TV_SIZES, TV_TYPES, TV_JPEG_QUALITIES, TV_FIT_TYPES } from "./lib/jpegs
 import { showOrHideElement, showAlertPopup } from "./lib/utility.js" 
 
 let canvasOutput = document.getElementById("canvasOutput");
-let canvasOutputCtx = canvasOutput.getContext("2d");
 let btnConnectTV = document.getElementById("btnConnectTV");
 let cropSelect = document.getElementById("cropSelect");
 
@@ -20,7 +19,7 @@ if (!("serial" in navigator)){
 }
 
 
-let jpegStreamer = new JPEGStreamer();
+let jpegStreamer = new JPEGStreamer(canvasOutput);
 jpegStreamer.onSerialConnect = () => {
     // Handle changing elements on the page
     btnConnectTV.classList.add("btn-warning");

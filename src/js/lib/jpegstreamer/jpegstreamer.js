@@ -1,7 +1,7 @@
 import { TV_SIZES, TV_TYPES, TV_JPEG_QUALITIES, TV_FIT_TYPES } from "./jpegstreamerCommon.js";
 
 class JPEGStreamer{
-    constructor(){
+    constructor(outputCanvas){
         // https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/frameRate
         // https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints
         const DISPLAY_MEDIA_OPTIONS = {
@@ -19,15 +19,6 @@ class JPEGStreamer{
         this.currentFitType = undefined;
         this.lastFrameSent = true;
 
-        // Serial
-        this.vendorID = 11914;
-        this.productID = 10;
-
-        // this.serial = new Serial([{usbVendorId: 11914, usbProductId: 5}, {usbVendorId:11914, usbProductId: 10}]);
-        // this.serial.onConnect = () => {this.#onSerialConnect()};
-        // this.serial.onDisconnect = () => {this.#onSerialDisconnect()};
-        // this.serial.onData = (data) => {this.#processSerialData(data)};
-
         // Frame capture
         // (https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrackProcessor#examples)
         this.streamCapture = undefined;
@@ -43,32 +34,8 @@ class JPEGStreamer{
         this.fitFrameH = TV_SIZES.TINYTV_2_H;
         this.offscreenCanvas = new OffscreenCanvas(this.fitFrameW, this.fitFrameH);
         this.offscreenCanvasCtx = this.offscreenCanvas.getContext("2d");
-
-        // const workerScript = 
-        // "self.vendorID = " + this.vendorID + ";" +
-        // "self.productID = " + this.productID + ";" +
-        // `
-        // self.offscreenCanvas = new OffscreenCanvas(216, 135);
-        // self.offscreenCanvasCtx = this.offscreenCanvas.getContext("2d");
-        // self.port = undefined;
         
-        // self.onmessage = async (message) => {
-        //     if(message.data.messageType == "connect"){
-        //         (await navigator.serial.getPorts()).forEach(async (port, index, ports) => {
-        //             const info = port.getInfo();
-        //             if(info.usbProductId == self.productID && info.usbVendorId == self.vendorID){
-        //                 self.port = port;
-        //                 await self.port.open({ baudRate: 2000000, bufferSize: 2048 });
-        //                 return;
-        //             }
-        //         });
-        //     }
-        // };
-        // `
-        
-
-        // let workerBlob = new Blob([workerScript], { type: "text/javascript" });
-        // this.convertWorker = new Worker(window.URL.createObjectURL(workerBlob));
+        // Web worker
         this.convertWorker = new Worker("/src/js/lib/jpegstreamer/jpegstreamerWorker.js", {
             type: 'module'
         });
@@ -133,50 +100,17 @@ class JPEGStreamer{
             // Scale stream source to TV size
             this.offscreenCanvasCtx.drawImage(videoFrame, this.fitFrameX, this.fitFrameY, this.fitFrameW, this.fitFrameH);
 
-            // Send frame dimensions and data to worker to be made
-            // into a jpeg and written to the device through serial
+            // Send frame data to worker to be made into a jpeg and written to the device through serial
             this.convertWorker.postMessage({messageType: "frame", messageData: [this.offscreenCanvas.transferToImageBitmap()]});
-            // this.convertWorker.postMessage([this.fitFrameW, this.fitFrameH, this.offscreenCanvas.transferToImageBitmap()]);
-
-            // this.convertWorker.postMessage([this.fitFrameX, this.fitFrameY, this.fitFrameW, this.fitFrameH, this.offscreenCanvas.transferToImageBitmap()]);
-            // this.lastFrameSent = true;
-            // this.convertWorker.postMessage({canvas: this.offscreenCanvas}, [this.offscreenCanvas]);
-
-            // let blob = await this.offscreenCanvas.convertToBlob({type: "image/jpeg", quality: this.currentJPEGQuality});
-
-            // console.log(blob.size);
-            // this.lastFrameSent = true;
-            // videoFrame.close();
-            // return;
-
-
-
-
-            // this.offscreenCanvas.convertToBlob({type: "image/jpeg", quality: this.currentJPEGQuality}).then((blob) => {
-            //     console.log(blob.size);
-            //     // Handle sending frames
-            //     if(this.serial.connected){
-            //         blob.arrayBuffer().then(async (buffer) => {
-            //             // Write the AVI chunk header bytes and the 4 bytes for the frame length
-            //             await this.serial.write(new Uint8Array([0x30, 0x30, 0x64, 0x63,  blob.size & 0x000000ff,
-            //                                                                             (blob.size & 0x0000ff00) >> 8,
-            //                                                                             (blob.size & 0x00ff0000) >> 16,
-            //                                                                             (blob.size & 0xff000000) >> 24]), false);
-            //             await this.serial.write(new Uint8Array(buffer), false);
-            //             this.lastFrameSent = true;
-            //         });
-            //     }else{
-            //         this.lastFrameSent = true;
-            //     }
-
-            //     // Handle drawing scaled and jpeg compressed frames in preview
-            //     createImageBitmap(blob, 0, 0, width, height).then((bitmap) => {
-            //         this.onNewCompressedBitmap(bitmap, width, height);
-            //     });
-            // });
         }
 
         videoFrame.close();
+    }
+
+
+    async #handleStreamStop(){
+        // This will start the process of stopping streaming and resetting the UI
+        this.disconnectSerial();
     }
 
 
@@ -185,6 +119,10 @@ class JPEGStreamer{
             navigator.mediaDevices.getDisplayMedia(this.DISPLAY_MEDIA_OPTIONS)
             .then((stream) => {
                 this.streamCapture = stream;
+
+                // Handle the case of a user stopping a stream some other way other than the STOP button
+                this.streamCapture.addEventListener("inactive", this.#handleStreamStop.bind(this));
+
                 this.streamVideoTrack = this.streamCapture.getVideoTracks()[0];
     
                 this.streamProcessor = new MediaStreamTrackProcessor({ track: this.streamVideoTrack });
