@@ -68,7 +68,6 @@ class JPEGStreamer{
         this.onSerialDisconnect = () => {};
         this.onTVDetected = (tvString) => {};
         this.onStreamReady = () => {};
-        this.onNewCompressedBitmap = (bitmap, width, height) => {};    // Use to draw the final frame (that was sent over serial) to a preview canvas
     }
 
 
@@ -249,7 +248,7 @@ class JPEGStreamer{
 
         (await navigator.serial.getPorts()).forEach((port, index, ports) => {
             const info = port.getInfo();
-            if(info.usbProductId == this.productID && info.usbVendorId == this.vendorID){
+            if(info.usbVendorId == 11914 && info.usbProductId == 10){
                 portFound = true;
                 return;
             }
@@ -258,8 +257,9 @@ class JPEGStreamer{
         // No device, make the user pair one for the worker to auto connect to
         if(!portFound){
             try{
-                await navigator.serial.requestPort({filters: [{usbVendorId:this.vendorID, usbProductId:this.productID}]});
+                await navigator.serial.requestPort({filters: [{usbVendorId:11914, usbProductId:10}]});
                 portFound = true;
+                console.log(portFound);
             }catch(err){
                 portFound = false;
                 console.warn(err);

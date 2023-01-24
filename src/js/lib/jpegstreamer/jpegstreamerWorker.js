@@ -76,7 +76,6 @@ self.onmessage = async (message) => {
 
             // Handle drawing scaled and jpeg compressed frames in preview
             createImageBitmap(blob, 0, 0, self.offscreenCanvas.width, self.offscreenCanvas.height).then((bitmap) => {
-                // this.onNewCompressedBitmap(bitmap, width, height);
                 self.offscreenOutputCanvas.width = self.offscreenCanvas.width;
                 self.offscreenOutputCanvas.height = self.offscreenCanvas.height;
                 self.offscreenOutputCanvasCtx.drawImage(bitmap, 0, 0, self.offscreenCanvas.width, self.offscreenCanvas.height);

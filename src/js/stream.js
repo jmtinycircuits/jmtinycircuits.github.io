@@ -43,11 +43,6 @@ jpegStreamer.onTVDetected = (tvString) => {
 jpegStreamer.onStreamReady = () => {
     showOrHideElement("divStreamingInterface", true);
 }
-jpegStreamer.onNewCompressedBitmap = (bitmap, width, height) => {
-    canvasOutput.width = width;
-    canvasOutput.height = height;
-    canvasOutputCtx.drawImage(bitmap, 0, 0, width, height);
-}
 
 
 btnConnectTV.onclick = () => {jpegStreamer.connectSerial()};
