@@ -12,8 +12,6 @@ class JPEGStreamer{
             audio: false
         };
 
-        this.textDecoder = new TextDecoder();
-
         // General dynamic flags
         this.detectedTVType = TV_TYPES.NONE;
         this.currentFitType = undefined;
@@ -60,6 +58,10 @@ class JPEGStreamer{
                 }
             }
         };
+
+        // Transfer control of the output canvas to the web worker
+        const offscreenOutputCanvas = outputCanvas.transferControlToOffscreen();
+        this.convertWorker.postMessage({messageType: 'canvas', canvas: offscreenOutputCanvas}, [offscreenOutputCanvas]);
 
         // External callbacks triggered internally
         this.onSerialConnect = () => {};

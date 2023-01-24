@@ -6,7 +6,8 @@ self.currentJPEGQuality = 0;
 
 self.offscreenCanvas = new OffscreenCanvas(216, 135);
 self.offscreenCanvasCtx = self.offscreenCanvas.getContext("2d");
-
+self.offscreenOutputCanvas = undefined;
+self.offscreenOutputCanvasCtx = undefined;
 
 self.serial = new Serial([{usbVendorId:11914, usbProductId:10}]);
 self.serial.onConnect = () => {
@@ -73,14 +74,20 @@ self.onmessage = async (message) => {
                 self.postMessage({messageType: "lastframesent", messageData: []});
             }
 
-            // // Handle drawing scaled and jpeg compressed frames in preview
-            // createImageBitmap(blob, 0, 0, width, height).then((bitmap) => {
-            //     this.onNewCompressedBitmap(bitmap, width, height);
-            // });
+            // Handle drawing scaled and jpeg compressed frames in preview
+            createImageBitmap(blob, 0, 0, self.offscreenCanvas.width, self.offscreenCanvas.height).then((bitmap) => {
+                // this.onNewCompressedBitmap(bitmap, width, height);
+                self.offscreenOutputCanvas.width = self.offscreenCanvas.width;
+                self.offscreenOutputCanvas.height = self.offscreenCanvas.height;
+                self.offscreenOutputCanvasCtx.drawImage(bitmap, 0, 0, self.offscreenCanvas.width, self.offscreenCanvas.height);
+            });
         });
     }else if(message.data.messageType == "connect"){
         self.serial.connect();
     }else if(message.data.messageType == "disconnect"){
         self.serial.disconnect();
+    }else if(message.data.messageType == "canvas"){
+        self.offscreenOutputCanvas = message.data.canvas;
+        self.offscreenOutputCanvasCtx = self.offscreenOutputCanvas.getContext("2d");
     }
 };
