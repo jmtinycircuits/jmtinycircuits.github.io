@@ -1,8 +1,83 @@
 import { Serial } from "../serial.js";
 import { TV_SIZES, TV_TYPES, TV_JPEG_QUALITIES, TV_FIT_TYPES } from "./jpegstreamerCommon.js";
 
-self.detectedTVType = TV_TYPES.NONE
+self.detectedTVType = TV_TYPES.NONE;
 self.currentJPEGQuality = 0;
+
+self.currentFitType = TV_FIT_TYPES.CONTAIN;
+self.fitFrameX = 0;
+self.fitFrameY = 0;
+self.fitFrameW = TV_SIZES.TINYTV_2_W;  // Just choose TinyTV 2 as a default
+self.fitFrameH = TV_SIZES.TINYTV_2_H;
+
+self.fitWidth = (screenW, screenH, videoW, videoH) => {
+    self.fitFrameW = screenW;
+    self.fitFrameH = videoH * (screenW / videoW);
+    self.fitFrameX = 0;
+    self.fitFrameY = (screenH/2) - (self.fitFrameH/2);
+}
+
+self.fitHeight = (screenW, screenH, videoW, videoH) => {
+    self.fitFrameW = videoW * (screenH / videoH);
+    self.fitFrameH = screenH;
+    self.fitFrameX = (screenW/2) - (self.fitFrameW/2);
+    self.fitFrameY = 0;
+}
+
+
+self.fitContain = (screenW, screenH, videoW, videoH) => {
+    if(videoW > videoH){
+        self.fitWidth(screenW, screenH, videoW, videoH);
+    }else{
+        self.fitHeight(screenW, screenH, videoW, videoH);
+    }
+}
+
+self.fitCover = (screenW, screenH, videoW, videoH) => {
+    if(videoW < videoH){
+        self.fitWidth(screenW, screenH, videoW, videoH);
+    }else{
+        self.fitHeight(screenW, screenH, videoW, videoH);
+    }
+}
+
+self.fitFill = (screenW, screenH) => {
+    self.fitFrameW = screenW;
+    self.fitFrameH = screenH;
+    self.fitFrameX = 0;
+    self.fitFrameY = 0;
+}
+
+self.setScreenFit = (fitType, videoW, videoH) => {
+    if(fitType == undefined && self.currentFitType == undefined){           // Set a default if neither defined
+        fitType = TV_FIT_TYPES.CONTAIN;
+        self.currentFitType = fitType;
+    }else if(fitType != undefined && self.currentFitType != undefined){     // Override with passed if both defined
+        self.currentFitType = fitType;
+    }else if(fitType == undefined && self.currentFitType != undefined){     // Use what's been set before
+        fitType = self.currentFitType;
+    }
+
+    if(self.detectedTVType == TV_TYPES.TINYTV_2){
+        if(fitType == undefined || fitType == TV_FIT_TYPES.CONTAIN){
+            self.fitContain(TV_SIZES.TINYTV_2_W, TV_SIZES.TINYTV_2_H, videoW, videoH);
+        }else if(fitType == TV_FIT_TYPES.COVER){
+            self.fitCover(TV_SIZES.TINYTV_2_W, TV_SIZES.TINYTV_2_H, videoW, videoH);
+        }else if(fitType == TV_FIT_TYPES.FILL){
+            self.fitFill(TV_SIZES.TINYTV_2_W, TV_SIZES.TINYTV_2_H);
+        }
+    }else if(self.detectedTVType == TV_TYPES.TINYTV_MINI){
+        if(fitType == undefined || fitType == TV_FIT_TYPES.CONTAIN){
+            self.fitContain(TV_SIZES.TINYTV_MINI_W, TV_SIZES.TINYTV_MINI_H, videoW, videoH);
+        }else if(fitType == TV_FIT_TYPES.COVER){
+            self.fitCover(TV_SIZES.TINYTV_MINI_W, TV_SIZES.TINYTV_MINI_H, videoW, videoH);
+        }else if(fitType == TV_FIT_TYPES.FILL){
+            self.fitFill(TV_SIZES.TINYTV_MINI_W, TV_SIZES.TINYTV_MINI_H);
+        }
+    }
+}
+
+
 
 self.offscreenCanvas = new OffscreenCanvas(216, 135);
 self.offscreenCanvasCtx = self.offscreenCanvas.getContext("2d");
@@ -56,31 +131,39 @@ self.serial.onDisconnect = () => {
 
 self.onmessage = async (message) => {
     if(message.data.messageType == "frame"){
-        self.offscreenCanvasCtx.drawImage(message.data.messageData[0], 0, 0);
+        self.setScreenFit(undefined, message.data.frame.codedWidth, message.data.frame.codedHeight);
 
-        self.offscreenCanvas.convertToBlob({type: "image/jpeg", quality: self.currentJPEGQuality}).then((blob) => {
-            // Handle sending frames
-            if(self.serial.connected){
-                blob.arrayBuffer().then(async (buffer) => {
-                    // Write the AVI chunk header bytes and the 4 bytes for the frame length
-                    await self.serial.write(new Uint8Array([0x30, 0x30, 0x64, 0x63,  blob.size & 0x000000ff,
-                                                                                    (blob.size & 0x0000ff00) >> 8,
-                                                                                    (blob.size & 0x00ff0000) >> 16,
-                                                                                    (blob.size & 0xff000000) >> 24]), false);
-                    await self.serial.write(new Uint8Array(buffer), false);
-                    self.postMessage({messageType: "lastframesent", messageData: []});
-                });
-            }else{
-                self.postMessage({messageType: "lastframesent", messageData: []});
-            }
+        // Fill offscreen canvas with black
+        self.offscreenCanvasCtx.beginPath();
+        self.offscreenCanvasCtx.rect(0, 0, self.offscreenCanvas.width, self.offscreenCanvas.height);
+        self.offscreenCanvasCtx.fillStyle = "black";
+        self.offscreenCanvasCtx.fill();
 
-            // Handle drawing scaled and jpeg compressed frames in preview
-            createImageBitmap(blob, 0, 0, self.offscreenCanvas.width, self.offscreenCanvas.height).then((bitmap) => {
-                self.offscreenOutputCanvas.width = self.offscreenCanvas.width;
-                self.offscreenOutputCanvas.height = self.offscreenCanvas.height;
-                self.offscreenOutputCanvasCtx.drawImage(bitmap, 0, 0, self.offscreenCanvas.width, self.offscreenCanvas.height);
-            });
-        });
+        // Scale stream source to TV size
+        self.offscreenCanvasCtx.drawImage(message.data.frame, self.fitFrameX, self.fitFrameY, self.fitFrameW, self.fitFrameH);
+
+        // Convert to jpeg blob
+        const blob = await self.offscreenCanvas.convertToBlob({type: "image/jpeg", quality: self.currentJPEGQuality});
+        
+        if(self.serial.connected){
+            // Write the AVI chunk header bytes and the 4 bytes for the frame length
+            await self.serial.write(new Uint8Array([0x30, 0x30, 0x64, 0x63,  blob.size & 0x000000ff,
+                                                                            (blob.size & 0x0000ff00) >> 8,
+                                                                            (blob.size & 0x00ff0000) >> 16,
+                                                                            (blob.size & 0xff000000) >> 24]), false);
+            
+            // Write the actual jpeg frame
+            await self.serial.write(new Uint8Array(await blob.arrayBuffer()), false);
+        }
+        
+        // Convert jpeg to bitmap for preview (want to show the compression in the preview) and display it
+        const bitmap = await createImageBitmap(blob, 0, 0, self.offscreenCanvas.width, self.offscreenCanvas.height);
+        self.offscreenOutputCanvas.width = self.offscreenCanvas.width;
+        self.offscreenOutputCanvas.height = self.offscreenCanvas.height;
+        self.offscreenOutputCanvasCtx.drawImage(bitmap, 0, 0, self.offscreenCanvas.width, self.offscreenCanvas.height);
+
+        message.data.frame.close();
+        self.postMessage({messageType: "lastframesent", messageData: []});
     }else if(message.data.messageType == "connect"){
         self.serial.connect();
     }else if(message.data.messageType == "disconnect"){
@@ -88,5 +171,7 @@ self.onmessage = async (message) => {
     }else if(message.data.messageType == "canvas"){
         self.offscreenOutputCanvas = message.data.canvas;
         self.offscreenOutputCanvasCtx = self.offscreenOutputCanvas.getContext("2d");
+    }else if(message.data.messageType == "fit"){
+        self.currentFitType = message.data.messageData[0];
     }
 };

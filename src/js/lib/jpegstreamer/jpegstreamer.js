@@ -12,9 +12,9 @@ class JPEGStreamer{
             audio: false
         };
 
-        // General dynamic flags
-        this.detectedTVType = TV_TYPES.NONE;
-        this.currentFitType = undefined;
+        // // General dynamic flags
+        // this.detectedTVType = TV_TYPES.NONE;
+        // this.currentFitType = undefined;
         this.lastFrameSent = true;
 
         // Frame capture
@@ -25,13 +25,13 @@ class JPEGStreamer{
         this.streamGenerator = undefined;
         this.streamTransformer = undefined;
 
-        // Canvas/frame scaling
-        this.fitFrameX = 0;
-        this.fitFrameY = 0;
-        this.fitFrameW = TV_SIZES.TINYTV_2_W;  // Just choose TinyTV 2 as a default
-        this.fitFrameH = TV_SIZES.TINYTV_2_H;
-        this.offscreenCanvas = new OffscreenCanvas(this.fitFrameW, this.fitFrameH);
-        this.offscreenCanvasCtx = this.offscreenCanvas.getContext("2d");
+        // // Canvas/frame scaling
+        // this.fitFrameX = 0;
+        // this.fitFrameY = 0;
+        // this.fitFrameW = TV_SIZES.TINYTV_2_W;  // Just choose TinyTV 2 as a default
+        // this.fitFrameH = TV_SIZES.TINYTV_2_H;
+        // this.offscreenCanvas = new OffscreenCanvas(this.fitFrameW, this.fitFrameH);
+        // this.offscreenCanvasCtx = this.offscreenCanvas.getContext("2d");
         
         // Web worker
         this.convertWorker = new Worker("/src/js/lib/jpegstreamer/jpegstreamerWorker.js", {
@@ -46,14 +46,14 @@ class JPEGStreamer{
                 this.#onSerialDisconnect();
             }else if(message.data.messageType == "tvtype"){
                 if(message.data.messageData == TV_TYPES.TINYTV_2){
-                    this.detectedTVType = TV_TYPES.TINYTV_2;
-                    this.offscreenCanvas.width = TV_SIZES.TINYTV_2_W;
-                    this.offscreenCanvas.height = TV_SIZES.TINYTV_2_H;
+                    // this.detectedTVType = TV_TYPES.TINYTV_2;
+                    // this.offscreenCanvas.width = TV_SIZES.TINYTV_2_W;
+                    // this.offscreenCanvas.height = TV_SIZES.TINYTV_2_H;
                     this.#onTVDetect("TinyTV 2");
                 }else if(message.data.messageData == TV_TYPES.TINYTV_MINI){
-                    this.detectedTVType = TV_TYPES.TINYTV_MINI;
-                    this.offscreenCanvas.width = TV_SIZES.TINYTV_MINI_W;
-                    this.offscreenCanvas.height = TV_SIZES.TINYTV_MINI_H;
+                    // this.detectedTVType = TV_TYPES.TINYTV_MINI;
+                    // this.offscreenCanvas.width = TV_SIZES.TINYTV_MINI_W;
+                    // this.offscreenCanvas.height = TV_SIZES.TINYTV_MINI_H;
                     this.#onTVDetect("TinyTV Mini");
                 }
             }
@@ -78,7 +78,7 @@ class JPEGStreamer{
 
     #onSerialDisconnect(){
         // Disconnected, reset since don't know what the next TV might be
-        this.detectedTVType = TV_TYPES.NONE;
+        // this.detectedTVType = TV_TYPES.NONE;
         this.onSerialDisconnect();
         this.#teardownStream();
     }
@@ -87,25 +87,11 @@ class JPEGStreamer{
     async #processCapturedFrames(videoFrame, controller){
         if(this.lastFrameSent){
             this.lastFrameSent = false;
-            
-            let width = this.offscreenCanvas.width;
-            let height = this.offscreenCanvas.height;
-            this.#setScreenFit(undefined, videoFrame.codedWidth, videoFrame.codedHeight);
-
-            // Fill offscreen canvas with black
-            this.offscreenCanvasCtx.beginPath();
-            this.offscreenCanvasCtx.rect(0, 0, width, height);
-            this.offscreenCanvasCtx.fillStyle = "black";
-            this.offscreenCanvasCtx.fill();
-
-            // Scale stream source to TV size
-            this.offscreenCanvasCtx.drawImage(videoFrame, this.fitFrameX, this.fitFrameY, this.fitFrameW, this.fitFrameH);
-
-            // Send frame data to worker to be made into a jpeg and written to the device through serial
-            this.convertWorker.postMessage({messageType: "frame", messageData: [this.offscreenCanvas.transferToImageBitmap()]});
+            this.convertWorker.postMessage({messageType: "frame", frame: videoFrame}, [videoFrame]);
+        }else{
+            // Not sent, just skipped, close it
+            videoFrame.close();
         }
-
-        videoFrame.close();
     }
 
 
@@ -165,79 +151,8 @@ class JPEGStreamer{
     }
 
 
-
-    #fitWidth(screenW, screenH, videoW, videoH){
-        this.fitFrameW = screenW;
-        this.fitFrameH = videoH * (screenW / videoW);
-        this.fitFrameX = 0;
-        this.fitFrameY = (screenH/2) - (this.fitFrameH/2);
-    }
-
-    #fitHeight(screenW, screenH, videoW, videoH){
-        this.fitFrameW = videoW * (screenH / videoH);
-        this.fitFrameH = screenH;
-        this.fitFrameX = (screenW/2) - (this.fitFrameW/2);
-        this.fitFrameY = 0;
-    }
-    
-
-    #fitContain(screenW, screenH, videoW, videoH){
-        if(videoW > videoH){
-            this.#fitWidth(screenW, screenH, videoW, videoH);
-        }else{
-            this.#fitHeight(screenW, screenH, videoW, videoH);
-        }
-    }
-
-    #fitCover(screenW, screenH, videoW, videoH){
-        if(videoW < videoH){
-            this.#fitWidth(screenW, screenH, videoW, videoH);
-        }else{
-            this.#fitHeight(screenW, screenH, videoW, videoH);
-        }
-    }
-
-    #fitFill(screenW, screenH){
-        this.fitFrameW = screenW;
-        this.fitFrameH = screenH;
-        this.fitFrameX = 0;
-        this.fitFrameY = 0;
-    }
-
-    #setScreenFit(fitType, videoW, videoH){
-        if(fitType == undefined && this.currentFitType == undefined){           // Set a default if neither defined
-            fitType = TV_FIT_TYPES.CONTAIN;
-            this.currentFitType = fitType;
-        }else if(fitType != undefined && this.currentFitType != undefined){     // Override with passed if both defined
-            this.currentFitType = fitType;
-        }else if(fitType == undefined && this.currentFitType != undefined){     // Use what's been set before
-            fitType = this.currentFitType;
-        }
-
-        if(this.detectedTVType == TV_TYPES.TINYTV_2){
-            if(fitType == undefined || fitType == TV_FIT_TYPES.CONTAIN){
-                this.#fitContain(TV_SIZES.TINYTV_2_W, TV_SIZES.TINYTV_2_H, videoW, videoH);
-            }else if(fitType == TV_FIT_TYPES.COVER){
-                this.#fitCover(TV_SIZES.TINYTV_2_W, TV_SIZES.TINYTV_2_H, videoW, videoH);
-            }else if(fitType == TV_FIT_TYPES.FILL){
-                this.#fitFill(TV_SIZES.TINYTV_2_W, TV_SIZES.TINYTV_2_H);
-            }
-        }else if(this.detectedTVType == TV_TYPES.TINYTV_MINI){
-            if(fitType == undefined || fitType == TV_FIT_TYPES.CONTAIN){
-                this.#fitContain(TV_SIZES.TINYTV_MINI_W, TV_SIZES.TINYTV_MINI_H, videoW, videoH);
-            }else if(fitType == TV_FIT_TYPES.COVER){
-                this.#fitCover(TV_SIZES.TINYTV_MINI_W, TV_SIZES.TINYTV_MINI_H, videoW, videoH);
-            }else if(fitType == TV_FIT_TYPES.FILL){
-                this.#fitFill(TV_SIZES.TINYTV_MINI_W, TV_SIZES.TINYTV_MINI_H);
-            }
-        }
-    }
-
-
     setScreenFit(fitType){
-        if(fitType == TV_FIT_TYPES.CONTAIN || fitType == TV_FIT_TYPES.COVER || fitType == TV_FIT_TYPES.FILL){
-            this.currentFitType = fitType;
-        }
+        this.convertWorker.postMessage({messageType:'fit', messageData:[fitType]});
     }
 
 
