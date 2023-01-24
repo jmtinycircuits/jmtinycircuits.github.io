@@ -12,9 +12,6 @@ class JPEGStreamer{
             audio: false
         };
 
-        // // General dynamic flags
-        // this.detectedTVType = TV_TYPES.NONE;
-        // this.currentFitType = undefined;
         this.lastFrameSent = true;
 
         // Frame capture
@@ -24,14 +21,6 @@ class JPEGStreamer{
         this.streamProcessor = undefined;
         this.streamGenerator = undefined;
         this.streamTransformer = undefined;
-
-        // // Canvas/frame scaling
-        // this.fitFrameX = 0;
-        // this.fitFrameY = 0;
-        // this.fitFrameW = TV_SIZES.TINYTV_2_W;  // Just choose TinyTV 2 as a default
-        // this.fitFrameH = TV_SIZES.TINYTV_2_H;
-        // this.offscreenCanvas = new OffscreenCanvas(this.fitFrameW, this.fitFrameH);
-        // this.offscreenCanvasCtx = this.offscreenCanvas.getContext("2d");
         
         // Web worker
         this.convertWorker = new Worker("/src/js/lib/jpegstreamer/jpegstreamerWorker.js", {
@@ -46,14 +35,8 @@ class JPEGStreamer{
                 this.#onSerialDisconnect();
             }else if(message.data.messageType == "tvtype"){
                 if(message.data.messageData == TV_TYPES.TINYTV_2){
-                    // this.detectedTVType = TV_TYPES.TINYTV_2;
-                    // this.offscreenCanvas.width = TV_SIZES.TINYTV_2_W;
-                    // this.offscreenCanvas.height = TV_SIZES.TINYTV_2_H;
                     this.#onTVDetect("TinyTV 2");
                 }else if(message.data.messageData == TV_TYPES.TINYTV_MINI){
-                    // this.detectedTVType = TV_TYPES.TINYTV_MINI;
-                    // this.offscreenCanvas.width = TV_SIZES.TINYTV_MINI_W;
-                    // this.offscreenCanvas.height = TV_SIZES.TINYTV_MINI_H;
                     this.#onTVDetect("TinyTV Mini");
                 }
             }
@@ -77,8 +60,6 @@ class JPEGStreamer{
 
 
     #onSerialDisconnect(){
-        // Disconnected, reset since don't know what the next TV might be
-        // this.detectedTVType = TV_TYPES.NONE;
         this.onSerialDisconnect();
         this.#teardownStream();
     }
@@ -174,13 +155,13 @@ class JPEGStreamer{
             try{
                 await navigator.serial.requestPort({filters: [{usbVendorId:11914, usbProductId:10}]});
                 portFound = true;
-                console.log(portFound);
             }catch(err){
                 portFound = false;
                 console.warn(err);
             }
         }
 
+        // If the page already had a paired device or the user added one, make the worker connect to it
         if(portFound){
             this.convertWorker.postMessage({messageType:'connect', messageData:[]});
         }
