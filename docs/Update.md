@@ -162,9 +162,6 @@ hide:
     <div id="progressBar" class="progress-bar-parent invisible">
       <div id="progressBarBar" class="progress-bar">
       </div>
-      <div id="progressBarText" class="progress-bar-text">
-        50%
-      </div>
     </div>
 
     <p id="browserSupportError" style="color:red" class="invisible">Browser not supported: please use a Chromium based browser like Google Chrome, Microsoft Edge, Opera, Brave, etc.</p>
