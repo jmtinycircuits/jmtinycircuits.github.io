@@ -251,7 +251,7 @@ if(window.location.pathname.indexOf("Update") != -1){
             show("connectButton");
 
             setClickCallback("connectButton", () => {
-                upload("/firmware/d-0.bin");
+                upload("/firmware/TinyTVKitFirmware.bin");
             });
         }
     }
